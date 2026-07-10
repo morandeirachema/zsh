@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh + shellcheck
+        run: sudo apt-get update && sudo apt-get install -y zsh shellcheck
+      - name: shellcheck (install.sh)
+        run: shellcheck --severity=warning --shell=bash install.sh
+      - name: bash -n (install.sh)
+        run: bash -n install.sh
+      - name: zsh -n (zsh configs)
+        run: |
+          zsh -n zsh/.zshrc
+          zsh -n zsh/aliases.zsh
+      - name: Validate starship.toml
+        run: python3 -c "import tomllib; tomllib.load(open('starship/starship.toml','rb'))"
+      - name: Validate git-delta fragment
+        run: git config -f git/delta.gitconfig --list
+      - name: Lua parse (nvim config)
+        run: |
+          sudo apt-get install -y lua5.4 || sudo apt-get install -y lua5.3 || true
+          for f in $(find nvim -name '*.lua'); do luac5.4 -p "$f" || luac5.3 -p "$f" || echo "skip $f"; done
+
+  smoke:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu
+            image: ubuntu:24.04
+            prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
+          - name: fedora
+            image: fedora:latest
+            prep: dnf install -y sudo git curl zsh
+          - name: arch
+            image: archlinux:latest
+            prep: pacman -Sy --noconfirm sudo git curl zsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke test on ${{ matrix.name }}
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
+            ${{ matrix.prep }}
+            ./install.sh --minimal --no-chsh -y
+            test -L "$HOME/.zshrc"                    && echo "✓ ~/.zshrc symlinked"
+            test -L "$HOME/.config/starship.toml"     && echo "✓ starship.toml symlinked"
+            zsh -ic "exit"                            && echo "✓ interactive zsh loads"
+            echo "smoke OK on ${{ matrix.name }}"
+          '

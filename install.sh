@@ -95,6 +95,7 @@ SUDO=""
 [ "$PM" != brew ] && [ "$(id -u)" -ne 0 ] && have sudo && SUDO="sudo"
 
 pkg_install() {
+  # shellcheck disable=SC2086  # $SUDO is intentionally empty (root/brew) → word-split
   case "$PM" in
     brew)   brew install "$@";;
     apt)    $SUDO apt-get install -y "$@";;
@@ -108,6 +109,7 @@ pkg_install() {
 info "Repo:            $REPO_DIR"
 info "Package manager: ${PM:-none detected}"
 
+# shellcheck disable=SC2086  # $SUDO may be empty
 [ "$PM" = apt ] && { $SUDO apt-get update -y || true; }
 
 # --- core ---
