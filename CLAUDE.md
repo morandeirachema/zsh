@@ -61,9 +61,15 @@ new tool. Note `bat` is installed as `batcat` on Debian/Ubuntu — `aliases.zsh`
 in `~/.zshrc.local`, which `.zshrc` sources last and `.gitignore` excludes. Don't hardcode host-specific
 values into the tracked files.
 
-**install.sh portability.** It detects the package manager (apt/dnf/pacman/zypper) via a `pkg_install`
-wrapper and installs user-local where possible (starship and zoxide into `~/.local/bin`, no sudo). New
+**install.sh portability.** It detects the package manager (**brew** on macOS, else apt/dnf/pacman/zypper)
+via a `pkg_install` wrapper and installs user-local where possible (starship and zoxide into `~/.local/bin`
+on Linux, or via brew on macOS). `SUDO` is empty for brew (Homebrew must not run under sudo). New
 dependencies should route through `pkg_install` with a graceful `warn` fallback rather than assuming apt.
+macOS specifics already handled: font via `--cask font-jetbrains-mono-nerd-font`, neovim via brew (the
+`install_neovim_release` Linux-tarball fallback is Linux-only), no `gcc/make` (Xcode CLT provides `cc`),
+and the chsh step is skipped when the login shell is already any `*/zsh` (so brew-zsh doesn't fight
+system-zsh). Debian's `fdfind`/`batcat` binary names are handled in `aliases.zsh`; brew ships real
+`fd`/`bat`, so both paths work.
 Two tools that are often absent from distro repos (lazygit, neovim) have `install_*_release` helpers that
 fetch the right arch tarball from GitHub into `~/.local/bin` — follow that pattern for similar tools.
 

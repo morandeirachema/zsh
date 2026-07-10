@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  install.sh — bootstrap chema's zsh console on any Linux box
+#  install.sh — bootstrap chema's zsh console on any Linux or macOS box
 #  Usage: ./install.sh [--minimal] [--no-nvim] [--no-font] [--no-chsh] [-y]
 #    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
 #    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
@@ -82,16 +82,19 @@ nvim_recent() {               # true if an installed nvim is >= 0.9.0
 
 # --- package manager detection ---
 PM=""
-if   have apt-get; then PM=apt
+if   have brew;    then PM=brew        # macOS (or Linuxbrew)
+elif have apt-get; then PM=apt
 elif have dnf;     then PM=dnf
 elif have pacman;  then PM=pacman
 elif have zypper;  then PM=zypper
 fi
 SUDO=""
-[ "$(id -u)" -ne 0 ] && have sudo && SUDO="sudo"
+# Homebrew must NOT run under sudo; the native package managers need it.
+[ "$PM" != brew ] && [ "$(id -u)" -ne 0 ] && have sudo && SUDO="sudo"
 
 pkg_install() {
   case "$PM" in
+    brew)   brew install "$@";;
     apt)    $SUDO apt-get install -y "$@";;
     dnf)    $SUDO dnf install -y "$@";;
     pacman) $SUDO pacman -S --noconfirm "$@";;
@@ -106,8 +109,12 @@ info "Package manager: ${PM:-none detected}"
 [ "$PM" = apt ] && { $SUDO apt-get update -y || true; }
 
 # --- core ---
-info "Installing core packages (zsh git curl unzip fontconfig)…"
-pkg_install zsh git curl unzip fontconfig || warn "some core packages failed; continuing"
+info "Installing core packages…"
+if [ "$PM" = brew ]; then
+  pkg_install zsh git curl || warn "some core packages failed; continuing"
+else
+  pkg_install zsh git curl unzip fontconfig || warn "some core packages failed; continuing"
+fi
 
 # --- fzf ---
 have fzf || { info "Installing fzf…"; pkg_install fzf || warn "fzf failed"; }
@@ -149,10 +156,15 @@ fi
 # --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
   info "Setting up Neovim + LazyVim…"
-  pkg_install gcc make || warn "build tools (gcc/make) failed — some nvim plugins need them"
-  if ! nvim_recent; then
-    info "Installing a recent Neovim (LazyVim needs >= 0.9)…"
-    install_neovim_release || warn "neovim install failed — see https://github.com/neovim/neovim/releases"
+  if [ "$PM" = brew ]; then
+    have cc || warn "run 'xcode-select --install' for a C compiler (nvim treesitter/telescope)"
+    nvim_recent || pkg_install neovim || warn "neovim install failed — try: brew install neovim"
+  else
+    pkg_install gcc make || warn "build tools (gcc/make) failed — some nvim plugins need them"
+    if ! nvim_recent; then
+      info "Installing a recent Neovim (LazyVim needs >= 0.9)…"
+      install_neovim_release || warn "neovim install failed — see https://github.com/neovim/neovim/releases"
+    fi
   fi
 fi
 
@@ -162,23 +174,36 @@ if [ "$MINIMAL" -eq 0 ] && ! have eza; then
   pkg_install eza || warn "eza not in your repos — see https://github.com/eza-community/eza"
 fi
 
-# --- starship (user-local, no sudo) — https://starship.rs ---
+# --- starship — https://starship.rs ---
 if ! have starship; then
   info "Installing starship…"
-  curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
-    || warn "starship install failed"
+  if [ "$PM" = brew ]; then
+    pkg_install starship || warn "starship install failed"
+  else
+    curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
+      || warn "starship install failed"
+  fi
 fi
 
-# --- zoxide (user-local) — https://github.com/ajeetdsouza/zoxide ---
+# --- zoxide — https://github.com/ajeetdsouza/zoxide ---
 if ! have zoxide; then
   info "Installing zoxide…"
-  curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh \
-    || warn "zoxide install failed"
+  if [ "$PM" = brew ]; then
+    pkg_install zoxide || warn "zoxide install failed"
+  else
+    curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh \
+      || warn "zoxide install failed"
+  fi
 fi
 
 # --- Nerd Font — https://github.com/ryanoasis/nerd-fonts ---
 if [ "$NO_FONT" -eq 0 ]; then
-  if ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
+  if [ "$PM" = brew ]; then
+    info "Installing JetBrainsMono Nerd Font (cask)…"
+    brew install --cask font-jetbrains-mono-nerd-font \
+      && ok "Font installed — set your terminal font to 'JetBrainsMono Nerd Font'." \
+      || warn "font cask failed; rerun with --no-font to skip"
+  elif ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
     info "Installing JetBrainsMono Nerd Font…"
     FONT_DIR="$HOME/.local/share/fonts/JetBrainsMonoNerd"
     mkdir -p "$FONT_DIR"; tmp="$(mktemp -d)"
@@ -232,13 +257,18 @@ if have delta; then
   ok "git diff now uses delta"
 fi
 
-# --- default shell ---
+# --- default shell (skip if the login shell is already some zsh) ---
 if [ "$NO_CHSH" -eq 0 ]; then
   ZSH_BIN="$(command -v zsh || true)"
-  if [ -n "$ZSH_BIN" ] && [ "${SHELL:-}" != "$ZSH_BIN" ]; then
-    info "Setting default shell to $ZSH_BIN…"
-    chsh -s "$ZSH_BIN" || warn "chsh failed — run manually: chsh -s $ZSH_BIN"
-  fi
+  case "${SHELL:-}" in
+    */zsh) : ;;   # already a zsh — don't force a different one (brew vs system)
+    *)
+      if [ -n "$ZSH_BIN" ]; then
+        info "Setting default shell to $ZSH_BIN…"
+        chsh -s "$ZSH_BIN" || warn "chsh failed — run manually: chsh -s $ZSH_BIN"
+      fi
+      ;;
+  esac
 fi
 
 echo

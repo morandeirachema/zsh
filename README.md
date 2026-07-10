@@ -1,7 +1,8 @@
 # console — my zsh setup
 
-A fast, portable zsh configuration I clone onto every Linux machine to get the
-same shell everywhere — same prompt, same plugins, same keys — from one command.
+A fast, portable zsh configuration I clone onto every Linux **and macOS** machine
+to get the same shell everywhere — same prompt, same plugins, same keys — from
+one command.
 
 **Stack**
 - [zinit](https://github.com/zdharma-continuum/zinit) — plugin manager (auto-installs on first shell launch)
@@ -57,10 +58,11 @@ The clone location doesn't matter — `.zshrc` resolves its own path, so you can
 keep the repo wherever you like.
 
 The installer is **idempotent** (safe to re-run). It detects your package
-manager (apt / dnf / pacman / zypper), installs missing tools, backs up any
-existing `~/.zshrc` to `~/.zshrc.pre-console.<timestamp>`, then symlinks this
-repo's config into place. The **first** new shell then auto-installs zinit and
-the plugins (a one-time ~10s step).
+manager (**Homebrew** on macOS, or apt / dnf / pacman / zypper on Linux),
+installs missing tools, backs up any existing `~/.zshrc` to
+`~/.zshrc.pre-console.<timestamp>`, then symlinks this repo's config into place.
+The **first** new shell then auto-installs zinit and the plugins (a one-time
+~10s step). On macOS the login shell is already zsh, so nothing is changed there.
 
 ### Options
 ```bash

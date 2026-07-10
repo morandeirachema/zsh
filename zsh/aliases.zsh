@@ -81,4 +81,9 @@ alias reload='exec zsh'                 # reload shell after config changes
 alias zshrc='${EDITOR:-nano} ~/.zshrc'
 alias please='sudo $(fc -ln -1)'        # re-run last command with sudo
 alias myip='curl -s https://ifconfig.me; echo'   # https://ifconfig.me
-alias ports='ss -tulpn'
+# listening ports — ss on Linux, lsof on macOS
+if command -v ss >/dev/null; then
+  alias ports='ss -tulpn'
+else
+  alias ports='lsof -nP -iTCP -sTCP:LISTEN'
+fi
