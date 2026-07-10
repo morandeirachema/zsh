@@ -64,6 +64,20 @@ installs missing tools, backs up any existing `~/.zshrc` to
 The **first** new shell then auto-installs zinit and the plugins (a one-time
 ~10s step). On macOS the login shell is already zsh, so nothing is changed there.
 
+### On macOS
+Same command as above, with two prerequisites: install
+[Homebrew](https://brew.sh) (the script installs every tool through `brew`), and
+— for Neovim's treesitter — the Xcode Command Line Tools:
+
+```bash
+xcode-select --install   # only if you don't already have a compiler
+```
+
+The installer won't touch your login shell (macOS already defaults to zsh) and
+gets the font via `brew install --cask font-jetbrains-mono-nerd-font`. Afterwards
+set your terminal font to **JetBrainsMono Nerd Font** (Terminal/iTerm2 prefs, or
+`font_family` in kitty).
+
 ### Options
 ```bash
 ./install.sh --minimal   # zsh + plugins + prompt only (skip extras, lazygit, nvim, font)
