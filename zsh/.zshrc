@@ -45,12 +45,16 @@ bindkey -e                    # emacs keybindings
 #  https://github.com/zdharma-continuum/zinit
 # ------------------------------------------------------------
 ZINIT_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
+# For reproducible / air-gapped installs, pin zinit to a commit or tag by
+# exporting ZINIT_PIN before the shell starts (e.g. in ~/.zshenv). Empty = latest.
+: "${ZINIT_PIN:=}"
 if [[ ! -d "$ZINIT_HOME" ]]; then
   print -P "%F{cyan}▓▒░ Installing zinit (one time)…%f"
   command mkdir -p "$(dirname "$ZINIT_HOME")"
   command git clone --depth 1 https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME" \
     && print -P "%F{green}▓▒░ zinit installed.%f" \
     || print -P "%F{red}▓▒░ zinit clone failed.%f"
+  [[ -n "$ZINIT_PIN" ]] && command git -C "$ZINIT_HOME" checkout -q "$ZINIT_PIN" 2>/dev/null
 fi
 source "$ZINIT_HOME/zinit.zsh"
 
@@ -133,3 +137,6 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 # Only sourced if owned by the current user (guards against another account
 # planting a ~/.zshrc.local that would run in your shell).
 [[ -f "$HOME/.zshrc.local" && -O "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+
+# Leave a fresh shell at $?=0 so the first prompt isn't a false error.
+true

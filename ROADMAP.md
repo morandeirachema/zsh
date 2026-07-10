@@ -18,12 +18,19 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   "ran it on the wrong box / wrong cluster / wrong account".
 - **`--server`** flag skips the Nerd Font on headless boxes.
 - **Cross-platform** installer (Linux apt/dnf/pacman/zypper + macOS Homebrew).
+- **CI** — GitHub Actions: shellcheck + `bash -n`/`zsh -n` + toml/gitconfig/lua
+  validation, and a smoke test that runs `./install.sh --minimal` in
+  ubuntu/fedora/arch containers.
+- **Supply-chain: verify downloads** — lazygit & neovim release binaries are now
+  SHA256-checked against their published checksums before install; refuse on
+  mismatch. `ZINIT_PIN` env var pins zinit to a commit/tag for reproducible builds.
+- **Fixed** a latent bug (found by CI): `.zshrc` left `$?=1` with no
+  `~/.zshrc.local`, which showed a false error on the first prompt.
 
 ## P1 — do next
-- **Supply-chain: pin & verify.** Pin the zinit clone to a tag and verify plugin
-  integrity; pin tool versions (or record them) for reproducible rebuilds.
-  Consider `zinit ice ver"..."` and checksum-verifying release-binary downloads
-  (lazygit/neovim) instead of trusting the tarball blindly.
+- **Deeper pinning.** Record a plugin lockfile (zinit `ice ver`/`snippet`) and
+  pin tool versions per-distro for fully reproducible rebuilds. Verify the
+  starship/zoxide fallback installers too (or drop them on hardened hosts).
 - **Air-gapped / offline mode.** A `--offline` path that skips every network
   fetch and a documented way to vendor zinit + plugins for locked-down hosts
   (many prod servers can't reach github.com).

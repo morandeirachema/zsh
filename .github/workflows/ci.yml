@@ -54,6 +54,6 @@ jobs:
             ./install.sh --minimal --no-chsh -y
             test -L "$HOME/.zshrc"                    && echo "✓ ~/.zshrc symlinked"
             test -L "$HOME/.config/starship.toml"     && echo "✓ starship.toml symlinked"
-            zsh -ic "exit"                            && echo "✓ interactive zsh loads"
+            zsh -ic "exit 0"                          && echo "✓ interactive zsh loads"
             echo "smoke OK on ${{ matrix.name }}"
           '

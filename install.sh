@@ -33,10 +33,11 @@ info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; }
 ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; }
 warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
+sha256_of() { if have sha256sum; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
 
 # --- release-binary fallbacks (used when a tool isn't in the repos) ---
 install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
-  local arch tmp ver
+  local arch tmp ver want got
   case "$(uname -m)" in
     x86_64)  arch="Linux_x86_64" ;;
     aarch64) arch="Linux_arm64" ;;
@@ -47,15 +48,26 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
          | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
   [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
   curl -sSfL -o "$tmp/lg.tgz" \
-    "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${ver}_${arch}.tar.gz" \
+    "https://github.com/jesseduffield/lazygit/releases/download/v${ver}/lazygit_${ver}_${arch}.tar.gz" \
     || { rm -rf "$tmp"; return 1; }
+  # verify SHA256 against the release's published checksums.txt before trusting it
+  if curl -sSfL -o "$tmp/sums" \
+       "https://github.com/jesseduffield/lazygit/releases/download/v${ver}/checksums.txt"; then
+    want="$(grep -E "  lazygit_${ver}_${arch}\.tar\.gz$" "$tmp/sums" | awk '{print $1}' | head -1)"
+    got="$(sha256_of "$tmp/lg.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "lazygit checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch lazygit checksums — installing unverified"
+  fi
   tar xzf "$tmp/lg.tgz" -C "$tmp" lazygit || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/lazygit" "$HOME/.local/bin/lazygit"
   rm -rf "$tmp"
 }
 
 install_neovim_release() {    # https://github.com/neovim/neovim/releases
-  local asset tmp
+  local asset tmp want got
   case "$(uname -m)" in
     x86_64)  asset="nvim-linux-x86_64" ;;
     aarch64) asset="nvim-linux-arm64" ;;
@@ -68,6 +80,17 @@ install_neovim_release() {    # https://github.com/neovim/neovim/releases
     curl -sSfL -o "$tmp/nvim.tgz" \
       "https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz" \
       || { rm -rf "$tmp"; return 1; }
+  fi
+  # verify SHA256 (neovim publishes <asset>.tar.gz.sha256sum beside the tarball)
+  if curl -sSfL -o "$tmp/nvim.sha" \
+       "https://github.com/neovim/neovim/releases/latest/download/${asset}.tar.gz.sha256sum"; then
+    want="$(awk '{print $1}' "$tmp/nvim.sha" | head -1)"
+    got="$(sha256_of "$tmp/nvim.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "neovim checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch neovim checksum — installing unverified"
   fi
   tar xzf "$tmp/nvim.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; rm -rf "$HOME/.local/nvim-dist"
