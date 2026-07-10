@@ -63,8 +63,12 @@ source "$ZINIT_HOME/zinit.zsh"
 # compinit runs ONCE here via zicompinit (inside atinit), then the
 # completion cache is replayed with zicdreplay — do not also call
 # compinit synchronously elsewhere.
+# COMPINIT_OPTS=-i keeps compinit's security check but silently skips
+# insecure (world/group-writable) fpath dirs instead of loading them or
+# prompting. Do NOT use -C here: it bypasses the check entirely, which on a
+# shared/hardened host is a completion-injection (privesc) risk.
 zinit wait lucid light-mode for \
-  atinit"ZINIT[COMPINIT_OPTS]=-C; zicompinit; zicdreplay" \
+  atinit"ZINIT[COMPINIT_OPTS]=-i; zicompinit; zicdreplay" \
       zdharma-continuum/fast-syntax-highlighting \
   blockf \
       zsh-users/zsh-completions \
@@ -125,5 +129,7 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 #  Aliases + per-machine overrides
 # ------------------------------------------------------------
 [[ -f "$ZDOTREPO/aliases.zsh" ]] && source "$ZDOTREPO/aliases.zsh"
-# Machine-specific, NOT committed to the repo (secrets, local paths):
-[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+# Machine-specific, NOT committed to the repo (secrets, local paths).
+# Only sourced if owned by the current user (guards against another account
+# planting a ~/.zshrc.local that would run in your shell).
+[[ -f "$HOME/.zshrc.local" && -O "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

@@ -86,7 +86,14 @@ whole dir) so lazygit's runtime `state.yml` stays local and out of the repo.
 
 - Keep shell startup fast: no network calls at startup beyond zinit's one-time self-clone, and never
   link a remote webfont.
-- `install.sh` writes a few global git settings (`core.pager delta`, `interactive.diffFilter`, a couple of
-  `delta.*` keys) to `~/.gitconfig` — the **only** state it changes outside `$HOME` dotfile symlinks. Keys
-  are set individually (not via `include.path`) so re-running the installer stays idempotent.
+- `install.sh` adds one `include.path` entry to `~/.gitconfig` pointing at `git/delta.gitconfig` — the
+  **only** state it changes outside `$HOME` dotfile symlinks. It is additive/revertible on purpose (do NOT
+  switch back to writing individual global keys — that clobbers an admin's existing pager). The include is
+  added only if not already present, so re-runs stay idempotent.
+- **Production/security posture (see `ROADMAP.md`).** This is used on servers and privileged boxes, so keep
+  these invariants when editing: `compinit` runs with `-i` (never `-C` — `-C` skips the insecure-fpath
+  check); `~/.zshrc.local` is sourced only when `-O` (owned by the user); prefer `pkg_install` over
+  `curl | sh` (piped installers are a labelled fallback only); the prompt's `username`/`hostname` (SSH/root)
+  and `kubernetes`/`aws` segments are safety features — don't remove them. `--server` skips the font on
+  headless hosts.
 - Commits use no Claude author/co-author references.

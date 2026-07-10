@@ -9,12 +9,16 @@ add_newline = true
 palette = "console"
 
 format = """
+$username\
+$hostname\
 $os\
 $directory\
 $git_branch\
 $git_status\
 $nodejs$python$rust$golang$java$php$c\
 $docker_context\
+$kubernetes\
+$aws\
 $line_break\
 $character"""
 
@@ -35,6 +39,25 @@ dur      = "#585b70"   # surface2 (command time)
 muted    = "#6c7086"   # overlay0
 peach    = "#fab387"   # elapsed time of last command
 subtext  = "#a6adc8"   # timestamp
+sky      = "#89dceb"   # username (remote / unusual user)
+root     = "#f38ba8"   # root user — danger
+host     = "#eba0ac"   # ssh hostname
+k8s      = "#74c7ec"   # kubernetes context
+cloud    = "#f2cdcd"   # aws profile / region
+
+# --- session identity: WHO and WHERE, so you never run a command on the
+#     wrong box. Hidden in a normal local shell; appears over SSH / as root. ---
+[username]
+show_always = false            # shown when root, over SSH, or an unusual $USER
+style_user = "bold fg:sky"
+style_root = "bold fg:root"
+format = "[$user]($style)"
+
+[hostname]
+ssh_only = true                # only when connected over SSH
+trim_at = "."                  # strip the domain, keep the short hostname
+style = "bold fg:host"
+format = "[@$hostname ]($style)"
 
 [os]
 disabled = false
@@ -122,6 +145,19 @@ symbol = ""
 style = "fg:crust bg:meta"
 format = "[](fg:meta)[ $symbol $context ]($style)[](fg:meta) "
 only_with_files = true
+
+# --- infra context: which cluster / cloud account you're pointed at.
+#     Only render when a context is actually set. ---
+[kubernetes]
+disabled = false
+symbol = "☸ "
+style = "fg:crust bg:k8s"
+format = "[](fg:k8s)[ $symbol$context(:$namespace) ]($style)[](fg:k8s) "
+
+[aws]
+symbol = " "
+style = "fg:crust bg:cloud"
+format = "[](fg:cloud)[ $symbol$profile( $region) ]($style)[](fg:cloud) "
 
 [cmd_duration]
 min_time = 0                 # show the elapsed time for every command

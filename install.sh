@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--minimal] [--no-nvim] [--no-font] [--no-chsh] [-y]
+#  Usage: ./install.sh [--minimal] [--server] [--no-nvim] [--no-font] [--no-chsh] [-y]
 #    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
+#    --server    headless box: skip the Nerd Font (it lives on your client, not the server)
 #    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
 #    --no-font   don't download the Nerd Font
 #    --no-chsh   don't change the default login shell
@@ -17,6 +18,7 @@ NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0
 for a in "$@"; do
   case "$a" in
     --no-font) NO_FONT=1;;
+    --server)  NO_FONT=1;;
     --no-chsh) NO_CHSH=1;;
     --no-nvim) NO_NVIM=1;;
     --minimal) MINIMAL=1; NO_FONT=1;;
@@ -174,26 +176,26 @@ if [ "$MINIMAL" -eq 0 ] && ! have eza; then
   pkg_install eza || warn "eza not in your repos — see https://github.com/eza-community/eza"
 fi
 
-# --- starship — https://starship.rs ---
+# --- starship — prefer a signed distro/brew package; fall back to the
+#     official installer only when it isn't packaged.  https://starship.rs
 if ! have starship; then
   info "Installing starship…"
-  if [ "$PM" = brew ]; then
-    pkg_install starship || warn "starship install failed"
-  else
-    curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
+  pkg_install starship || {
+    warn "starship not packaged here — using the official installer (curl | sh)"
+    curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
       || warn "starship install failed"
-  fi
+  }
 fi
 
-# --- zoxide — https://github.com/ajeetdsouza/zoxide ---
+# --- zoxide — prefer a packaged version; official installer as fallback.
+#     https://github.com/ajeetdsouza/zoxide
 if ! have zoxide; then
   info "Installing zoxide…"
-  if [ "$PM" = brew ]; then
-    pkg_install zoxide || warn "zoxide install failed"
-  else
-    curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh \
+  pkg_install zoxide || {
+    warn "zoxide not packaged here — using the official installer (curl | sh)"
+    curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh \
       || warn "zoxide install failed"
-  fi
+  }
 fi
 
 # --- Nerd Font — https://github.com/ryanoasis/nerd-fonts ---
@@ -245,16 +247,15 @@ if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
   link "$REPO_DIR/nvim" "$HOME/.config/nvim"
 fi
 
-# --- point git at delta (idempotent: individual keys, safe to re-run) ---
+# --- point git at delta via an include (non-destructive & revertible: your
+#     existing ~/.gitconfig keys are untouched; drop the include to undo) ---
 if have delta; then
   info "Configuring git to use delta…"
-  git config --global core.pager "delta"
-  git config --global interactive.diffFilter "delta --color-only"
-  git config --global delta.navigate true          # n / N jump between diff sections
-  git config --global delta.line-numbers true
-  git config --global merge.conflictStyle zdiff3
-  git config --global diff.colorMoved default
-  ok "git diff now uses delta"
+  frag="$REPO_DIR/git/delta.gitconfig"
+  if ! git config --global --get-all include.path 2>/dev/null | grep -qxF "$frag"; then
+    git config --global --add include.path "$frag"
+  fi
+  ok "git uses delta (undo: git config --global --unset-all include.path '$frag')"
 fi
 
 # --- default shell (skip if the login shell is already some zsh) ---

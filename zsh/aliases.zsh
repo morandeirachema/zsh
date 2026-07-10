@@ -52,6 +52,30 @@ if command -v nvim >/dev/null; then
   export VISUAL='nvim'
 fi
 
+# --- devops / sysadmin shortcuts (defined only if the tool is installed) ---
+if command -v kubectl >/dev/null; then
+  alias k='kubectl'
+  alias kg='kubectl get'
+  alias kd='kubectl describe'
+  alias klo='kubectl logs -f'
+  alias kx='kubectl config use-context'                        # switch cluster
+  alias kns='kubectl config set-context --current --namespace' # switch namespace
+fi
+if command -v docker >/dev/null; then
+  alias d='docker'
+  alias dps='docker ps'
+  alias dc='docker compose'
+fi
+command -v terraform  >/dev/null && alias tf='terraform'
+command -v ansible    >/dev/null && alias ap='ansible-playbook'
+command -v tmux       >/dev/null && { alias t='tmux'; alias ta='tmux attach'; alias tls='tmux ls'; }
+if command -v systemctl >/dev/null; then
+  alias sc='systemctl'
+  alias scu='systemctl --user'
+  alias jc='journalctl'
+  alias jcu='journalctl --user'
+fi
+
 # --- grep colors ---
 alias grep='grep --color=auto'
 alias egrep='grep -E --color=auto'

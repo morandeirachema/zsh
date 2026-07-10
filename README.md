@@ -16,6 +16,12 @@ one command.
 - [lazygit](https://github.com/jesseduffield/lazygit) — full-screen terminal UI for git (alias `lg`; diffs rendered with delta)
 - [Neovim](https://neovim.io) + [LazyVim](https://www.lazyvim.org) — editor with a batteries-included config, vendored in [`nvim/`](nvim/)
 
+**Built for servers too.** The prompt shows **`user@host` over SSH** (root in red) and your
+**Kubernetes context** and **AWS profile/region** when set — so you never act on the wrong box,
+cluster, or account. Runs headless with `--server`, keeps `compinit`'s security check, sources
+`~/.zshrc.local` only if you own it, and configures git-delta via a revertible `include` (your
+`~/.gitconfig` is never rewritten). See [`ROADMAP.md`](ROADMAP.md) for what's next.
+
 **Plugins** (loaded via zinit **turbo mode** — async, after the prompt, for instant startup):
 zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-history-substring-search,
 [zsh-you-should-use](https://github.com/MichaelAquilina/zsh-you-should-use) (nudges you toward aliases you've defined).
@@ -81,6 +87,7 @@ set your terminal font to **JetBrainsMono Nerd Font** (Terminal/iTerm2 prefs, or
 ### Options
 ```bash
 ./install.sh --minimal   # zsh + plugins + prompt only (skip extras, lazygit, nvim, font)
+./install.sh --server    # headless box: skip the Nerd Font (it lives on your client)
 ./install.sh --no-nvim   # don't install Neovim/LazyVim or touch ~/.config/nvim
 ./install.sh --no-font   # skip the Nerd Font download
 ./install.sh --no-chsh   # don't change the default login shell
@@ -179,7 +186,10 @@ Put anything machine-specific (secrets, local `PATH`, work aliases) in
 │   └── lua/{config,plugins}/…
 ├── lazygit/
 │   └── config.yml          # lazygit config  ->  ~/.config/lazygit/config.yml
+├── git/
+│   └── delta.gitconfig     # git-delta settings, included into ~/.gitconfig
 ├── CLAUDE.md               # notes for AI assistants working in this repo
+├── ROADMAP.md              # production-hardening plan
 └── README.md
 ```
 
