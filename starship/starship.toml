@@ -15,11 +15,11 @@ $git_branch\
 $git_status\
 $nodejs$python$rust$golang$java$php$c\
 $docker_context\
-$cmd_duration\
 $line_break\
 $character"""
 
-right_format = """$time"""
+# right side of each prompt: how long the last command took + the time it finished
+right_format = """$cmd_duration$time"""
 
 # Catppuccin Mocha — https://github.com/catppuccin/catppuccin
 [palettes.console]
@@ -32,7 +32,9 @@ warn     = "#f9e2af"   # yellow  (dirty git)
 lang     = "#94e2d5"   # teal
 meta     = "#cba6f7"   # mauve   (docker)
 dur      = "#585b70"   # surface2 (command time)
-muted    = "#6c7086"   # overlay0 (clock)
+muted    = "#6c7086"   # overlay0
+peach    = "#fab387"   # elapsed time of last command
+subtext  = "#a6adc8"   # timestamp
 
 [os]
 disabled = false
@@ -122,15 +124,16 @@ format = "[](fg:meta)[ $symbol $context ]($style)[](fg:meta) "
 only_with_files = true
 
 [cmd_duration]
-min_time = 500
-style = "fg:text_lt bg:dur"
-format = "[](fg:dur)[  $duration ]($style)[](fg:dur) "
+min_time = 0                 # show the elapsed time for every command
+show_milliseconds = true     # ...including sub-second ones (e.g. 42ms)
+style = "fg:peach"
+format = "[  $duration]($style)"
 
 [time]
 disabled = false
-time_format = "%H:%M"
-style = "fg:muted"
-format = "[  $time ]($style)"
+time_format = "%H:%M:%S"
+style = "fg:subtext"
+format = "[   $time]($style)"
 
 [character]
 success_symbol = "[❯](bold #a6e3a1)"
