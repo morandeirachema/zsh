@@ -302,3 +302,7 @@ ok   "Done!  Start your new shell with:  exec zsh"
 info "First zsh launch auto-installs zinit + plugins (one-time, ~10s)."
 [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ] && \
   info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."
+
+# Failures above are non-fatal (they only `warn`); exit success so callers/CI
+# don't trip over a trailing conditional's exit status.
+exit 0

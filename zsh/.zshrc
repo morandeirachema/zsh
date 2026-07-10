@@ -14,6 +14,11 @@ export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 export EDITOR="${EDITOR:-nano}"
 export VISUAL="$EDITOR"
 
+# --- gpg / ssh agents ---
+export GPG_TTY=$TTY    # let gpg prompt in this terminal (e.g. git commit signing)
+# ssh-agent is left to your platform (keyring / systemd / 1Password / Vault).
+# To auto-start a plain agent when none exists, see zsh/zshrc.local.example.
+
 # ------------------------------------------------------------
 #  History
 # ------------------------------------------------------------

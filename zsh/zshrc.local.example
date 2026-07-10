@@ -1,0 +1,23 @@
+# ~/.zshrc.local — machine-specific overrides (NOT committed).
+# Copy to ~/.zshrc.local and edit. Sourced last by .zshrc, only if you own it.
+#
+#   cp zsh/zshrc.local.example ~/.zshrc.local && chmod 600 ~/.zshrc.local
+
+# --- Reproducible zinit (optional): pin to a commit for air-gapped/prod hosts ---
+# export ZINIT_PIN="<zinit-commit-sha>"
+
+# --- ssh-agent (opt-in): start a plain agent only if your platform doesn't ---
+# if [ -z "${SSH_AUTH_SOCK:-}" ] && command -v ssh-agent >/dev/null; then
+#   eval "$(ssh-agent -s)" >/dev/null
+# fi
+
+# --- Secrets: source a 0600 file of exports kept OUTSIDE any repo ---
+# [ -r "$HOME/.secrets/env" ] && source "$HOME/.secrets/env"
+
+# --- Per-environment prompt accent (reinforce prod vs staging) ---
+# Tint the starship OS pill red on prod boxes so you never mistake them.
+# export STARSHIP_CONFIG="$HOME/.config/starship.prod.toml"   # a red-accent variant
+
+# --- Local PATH / work aliases ---
+# export PATH="$HOME/tools/bin:$PATH"
+# alias vpn='sudo openvpn --config ~/work/vpn.conf'

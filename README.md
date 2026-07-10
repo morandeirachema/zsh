@@ -170,7 +170,9 @@ docs at <https://www.lazyvim.org>.
 
 ## Per-machine overrides
 Put anything machine-specific (secrets, local `PATH`, work aliases) in
-`~/.zshrc.local` — it's sourced last and is **git-ignored**.
+`~/.zshrc.local` — it's sourced last (only if you own it) and is **git-ignored**.
+Start from [`zsh/zshrc.local.example`](zsh/zshrc.local.example). See
+[`SECURITY.md`](SECURITY.md) for history/secret handling and the security posture.
 
 ## Layout
 ```
