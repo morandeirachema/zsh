@@ -67,6 +67,14 @@ if ! have bat && ! have batcat; then
   info "Installing bat…"; pkg_install bat || warn "bat failed"
 fi
 
+# --- fd (find) — Debian/Ubuntu package is 'fd-find', binary 'fdfind' ---
+if ! have fd && ! have fdfind; then
+  info "Installing fd…"; pkg_install fd-find || pkg_install fd || warn "fd failed"
+fi
+
+# --- ripgrep (rg) — fast grep ---
+have rg || { info "Installing ripgrep…"; pkg_install ripgrep || warn "ripgrep failed"; }
+
 # --- eza (skip in --minimal) ---
 if [ "$MINIMAL" -eq 0 ] && ! have eza; then
   info "Installing eza…"

@@ -8,8 +8,10 @@ A fast, portable zsh configuration I clone onto every Linux machine.
 - [fzf](https://github.com/junegunn/fzf) — fuzzy history (`Ctrl-R`), files (`Ctrl-T`), cd (`Alt-C`)
 - [zoxide](https://github.com/ajeetdsouza/zoxide) — smarter `cd` (`z <dir>`)
 - [eza](https://github.com/eza-community/eza) + [bat](https://github.com/sharkdp/bat) — modern `ls` / `cat`
+- [fd](https://github.com/sharkdp/fd) + [ripgrep](https://github.com/BurntSushi/ripgrep) — fast `find` / `grep` (fd also powers fzf's `Ctrl-T` / `Alt-C`)
 
-**Plugins:** zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-history-substring-search.
+**Plugins** (loaded via zinit **turbo mode** — async, after the prompt, for instant startup):
+zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-history-substring-search.
 
 ## Install on a new machine
 

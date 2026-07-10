@@ -55,22 +55,33 @@ fi
 source "$ZINIT_HOME/zinit.zsh"
 
 # ------------------------------------------------------------
-#  Plugins
+#  Plugins — zinit TURBO mode (loaded async, right after the
+#  prompt appears → instant startup).
+#  https://github.com/zdharma-continuum/zinit#turbo-mode-zsh--53
 # ------------------------------------------------------------
-zinit light zsh-users/zsh-autosuggestions
-zinit light zsh-users/zsh-completions
-zinit light Aloxaf/fzf-tab
-# syntax highlighting must load near the end
-zinit light zdharma-continuum/fast-syntax-highlighting
-# history-substring-search after highlighting
-zinit light zsh-users/zsh-history-substring-search
+# First wave: highlighting + completions + autosuggestions.
+# compinit runs ONCE here via zicompinit (inside atinit), then the
+# completion cache is replayed with zicdreplay — do not also call
+# compinit synchronously elsewhere.
+zinit wait lucid light-mode for \
+  atinit"ZINIT[COMPINIT_OPTS]=-C; zicompinit; zicdreplay" \
+      zdharma-continuum/fast-syntax-highlighting \
+  blockf \
+      zsh-users/zsh-completions \
+  atload"!_zsh_autosuggest_start" \
+      zsh-users/zsh-autosuggestions
+
+# Second wave: fzf-tab (must load after compinit) and
+# history-substring-search. Its keys are bound in atload because in
+# turbo mode the widget does not exist until the plugin is sourced.
+zinit wait lucid light-mode for \
+  Aloxaf/fzf-tab \
+  atload'bindkey "^[[A" history-substring-search-up; bindkey "^[[B" history-substring-search-down; bindkey "^P" history-substring-search-up; bindkey "^N" history-substring-search-down' \
+      zsh-users/zsh-history-substring-search
 
 # ------------------------------------------------------------
-#  Completion
+#  Completion styling (zstyles are read lazily at completion time)
 # ------------------------------------------------------------
-autoload -Uz compinit
-compinit -u
-zinit cdreplay -q             # replay cached completions captured by zinit
 
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'   # case-insensitive
 zstyle ':completion:*' menu no
@@ -92,13 +103,9 @@ if command -v fzf >/dev/null; then
   fi
 fi
 
-# ------------------------------------------------------------
-#  Keybindings for history-substring-search (Up/Down + Ctrl-P/N)
-# ------------------------------------------------------------
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-bindkey '^P'   history-substring-search-up
-bindkey '^N'   history-substring-search-down
+# history-substring-search keys (Up/Down + Ctrl-P/N) are bound in the
+# plugin's atload hook above — in turbo mode the widget only exists
+# once the plugin has finished loading asynchronously.
 
 # ------------------------------------------------------------
 #  zoxide — smarter cd (`z foo`, `zi` interactive)

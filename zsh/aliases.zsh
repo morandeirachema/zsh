@@ -23,6 +23,23 @@ elif command -v batcat >/dev/null; then
   alias cat='batcat --paging=never'
 fi
 
+# --- fd (find) — binary is 'fdfind' on Debian/Ubuntu; also drives fzf ---
+if command -v fdfind >/dev/null && ! command -v fd >/dev/null; then
+  alias fd='fdfind'; _FD_BIN='fdfind'
+elif command -v fd >/dev/null; then
+  _FD_BIN='fd'
+fi
+if [[ -n "${_FD_BIN:-}" ]]; then
+  # let fzf's Ctrl-T / Alt-C use fd (respects .gitignore, includes dotfiles)
+  export FZF_DEFAULT_COMMAND="$_FD_BIN --type f --hidden --follow --exclude .git"
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  export FZF_ALT_C_COMMAND="$_FD_BIN --type d --hidden --follow --exclude .git"
+fi
+unset _FD_BIN
+
+# --- rg (ripgrep) — fast recursive grep ---
+command -v rg >/dev/null && alias rgi='rg -i'
+
 # --- grep colors ---
 alias grep='grep --color=auto'
 alias egrep='grep -E --color=auto'
