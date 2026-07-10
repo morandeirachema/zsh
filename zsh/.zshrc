@@ -71,11 +71,14 @@ zinit wait lucid light-mode for \
   atload"!_zsh_autosuggest_start" \
       zsh-users/zsh-autosuggestions
 
-# Second wave: fzf-tab (must load after compinit) and
+# Second wave: fzf-tab (must load after compinit), you-should-use
+# (nudges you when a typed command has an alias you defined), and
 # history-substring-search. Its keys are bound in atload because in
 # turbo mode the widget does not exist until the plugin is sourced.
+YSU_MESSAGE_POSITION="after"
 zinit wait lucid light-mode for \
   Aloxaf/fzf-tab \
+  MichaelAquilina/zsh-you-should-use \
   atload'bindkey "^[[A" history-substring-search-up; bindkey "^[[B" history-substring-search-down; bindkey "^P" history-substring-search-up; bindkey "^N" history-substring-search-down' \
       zsh-users/zsh-history-substring-search
 

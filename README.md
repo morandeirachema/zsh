@@ -10,9 +10,31 @@ same shell everywhere — same prompt, same plugins, same keys — from one comm
 - [zoxide](https://github.com/ajeetdsouza/zoxide) — smarter `cd` (`z <dir>`)
 - [eza](https://github.com/eza-community/eza) + [bat](https://github.com/sharkdp/bat) — modern `ls` / `cat`
 - [fd](https://github.com/sharkdp/fd) + [ripgrep](https://github.com/BurntSushi/ripgrep) — fast `find` / `grep` (fd also powers fzf's `Ctrl-T` / `Alt-C`)
+- [delta](https://github.com/dandavison/delta) — syntax-highlighting pager for `git diff` / `log` / `show` (configured automatically)
+- [tealdeer](https://github.com/tealdeer-rs/tealdeer) (`tldr`) — quick, offline command examples
 
 **Plugins** (loaded via zinit **turbo mode** — async, after the prompt, for instant startup):
-zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-history-substring-search.
+zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-history-substring-search,
+[zsh-you-should-use](https://github.com/MichaelAquilina/zsh-you-should-use) (nudges you toward aliases you've defined).
+
+## Back up your current shell first
+
+`install.sh` already moves any existing `~/.zshrc` to
+`~/.zshrc.pre-console.<timestamp>` before linking. For a full, restorable
+snapshot (history, oh-my-zsh customizations, etc.), run this first:
+
+```bash
+BK=~/shell-backup-$(date +%Y%m%d-%H%M%S); mkdir -p "$BK"
+cp -a ~/.zshrc ~/.zshenv ~/.zprofile ~/.zsh_history "$BK"/ 2>/dev/null
+[ -d ~/.oh-my-zsh/custom ] && cp -a ~/.oh-my-zsh/custom "$BK"/omz-custom
+tar czf "$BK.tar.gz" -C ~ "$(basename "$BK")" && echo "Backup: $BK.tar.gz"
+```
+
+Restore it any time with:
+
+```bash
+cp -a "$BK"/.zshrc ~/.zshrc && exec zsh    # $BK = the folder printed above
+```
 
 ## Install on a new machine
 
@@ -57,10 +79,23 @@ so the prompt icons render. In kitty: `font_family JetBrainsMono Nerd Font`.
 | `↑` / `↓`          | history search matching what you've already typed   |
 | `z <dir>`          | jump to a frequently-used directory (zoxide)        |
 | `zi`               | pick a directory to jump to, interactively          |
+| `tldr <cmd>`       | practical examples for a command (offline)          |
+| `git diff`         | paged through delta — syntax-highlighted, `n`/`N` to navigate |
 
 Handy aliases (see [`zsh/aliases.zsh`](zsh/aliases.zsh)): `ll` / `la` / `lt`
 (eza listings), `gs` / `gl` / `gd` (git), `reload` (restart the shell),
 `please` (re-run the last command with sudo), `myip`, `ports`.
+
+## What the plugins do
+
+| Plugin | What you get |
+| ------ | ------------ |
+| **zsh-autosuggestions** | As you type, greys out the rest of a matching past command — press `→` / `End` to accept it, or `Ctrl-→` to accept one word. |
+| **fast-syntax-highlighting** | Colors the command line live: valid commands in green, unknown ones in red, quotes and paths highlighted — so you catch typos *before* pressing Enter. |
+| **fzf-tab** | Replaces the plain `Tab` menu with a fuzzy [fzf](https://github.com/junegunn/fzf) selector — start typing to filter matches, with a directory preview when completing `cd`. |
+| **zsh-history-substring-search** | Type a fragment of an old command, then `↑` / `↓` (or `Ctrl-P` / `Ctrl-N`) cycles through only the history entries that contain it. |
+| **zsh-completions** | A large bundle of extra `Tab`-completion definitions for tools that don't ship their own. |
+| **zsh-you-should-use** | After you run a command that has an alias you defined, reminds you the shorter alias exists — so the aliases actually stick. |
 
 ## Per-machine overrides
 Put anything machine-specific (secrets, local `PATH`, work aliases) in

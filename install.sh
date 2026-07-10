@@ -2,7 +2,7 @@
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux box
 #  Usage: ./install.sh [--minimal] [--no-font] [--no-chsh] [-y]
-#    --minimal   only zsh + plugins + prompt (skip eza/bat/font)
+#    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/font)
 #    --no-font   don't download the Nerd Font
 #    --no-chsh   don't change the default login shell
 #    -y|--yes    non-interactive
@@ -75,6 +75,21 @@ fi
 # --- ripgrep (rg) — fast grep ---
 have rg || { info "Installing ripgrep…"; pkg_install ripgrep || warn "ripgrep failed"; }
 
+# --- extras (skipped by --minimal) ---
+if [ "$MINIMAL" -eq 0 ]; then
+  # git-delta — syntax-highlighting pager for git diff/log/show
+  if ! have delta; then
+    info "Installing git-delta…"
+    pkg_install git-delta || warn "git-delta not in your repos — see https://github.com/dandavison/delta/releases"
+  fi
+  # tealdeer (tldr) — simplified, offline command examples
+  if ! have tldr; then
+    info "Installing tealdeer (tldr)…"
+    pkg_install tealdeer || warn "tealdeer failed — see https://github.com/tealdeer-rs/tealdeer"
+  fi
+  have tldr && tldr --update >/dev/null 2>&1 || true
+fi
+
 # --- eza (skip in --minimal) ---
 if [ "$MINIMAL" -eq 0 ] && ! have eza; then
   info "Installing eza…"
@@ -130,6 +145,18 @@ link() {
 info "Linking config…"
 link "$REPO_DIR/zsh/.zshrc"              "$HOME/.zshrc"
 link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
+
+# --- point git at delta (idempotent: individual keys, safe to re-run) ---
+if have delta; then
+  info "Configuring git to use delta…"
+  git config --global core.pager "delta"
+  git config --global interactive.diffFilter "delta --color-only"
+  git config --global delta.navigate true          # n / N jump between diff sections
+  git config --global delta.line-numbers true
+  git config --global merge.conflictStyle zdiff3
+  git config --global diff.colorMoved default
+  ok "git diff now uses delta"
+fi
 
 # --- default shell ---
 if [ "$NO_CHSH" -eq 0 ]; then

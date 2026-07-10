@@ -69,4 +69,7 @@ dependencies should route through `pkg_install` with a graceful `warn` fallback 
 
 - Keep shell startup fast: no network calls at startup beyond zinit's one-time self-clone, and never
   link a remote webfont.
+- `install.sh` writes a few global git settings (`core.pager delta`, `interactive.diffFilter`, a couple of
+  `delta.*` keys) to `~/.gitconfig` — the **only** state it changes outside `$HOME` dotfile symlinks. Keys
+  are set individually (not via `include.path`) so re-running the installer stays idempotent.
 - Commits use no Claude author/co-author references.
