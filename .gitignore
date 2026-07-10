@@ -1,0 +1,7 @@
+# machine-specific, never commit
+.zshrc.local
+*.local
+# os cruft
+.DS_Store
+# claude code local settings
+.claude/
