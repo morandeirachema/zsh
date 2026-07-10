@@ -40,6 +40,18 @@ unset _FD_BIN
 # --- rg (ripgrep) — fast recursive grep ---
 command -v rg >/dev/null && alias rgi='rg -i'
 
+# --- lazygit — terminal UI for git ---
+command -v lazygit >/dev/null && alias lg='lazygit'
+
+# --- neovim as the default editor ---
+if command -v nvim >/dev/null; then
+  alias vi='nvim'
+  alias vim='nvim'
+  alias v='nvim'
+  export EDITOR='nvim'
+  export VISUAL='nvim'
+fi
+
 # --- grep colors ---
 alias grep='grep --color=auto'
 alias egrep='grep -E --color=auto'

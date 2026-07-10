@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux box
-#  Usage: ./install.sh [--minimal] [--no-font] [--no-chsh] [-y]
-#    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/font)
+#  Usage: ./install.sh [--minimal] [--no-nvim] [--no-font] [--no-chsh] [-y]
+#    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
+#    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
 #    --no-font   don't download the Nerd Font
 #    --no-chsh   don't change the default login shell
 #    -y|--yes    non-interactive
@@ -11,12 +12,13 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-NO_FONT=0; NO_CHSH=0; MINIMAL=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0
 
 for a in "$@"; do
   case "$a" in
     --no-font) NO_FONT=1;;
     --no-chsh) NO_CHSH=1;;
+    --no-nvim) NO_NVIM=1;;
     --minimal) MINIMAL=1; NO_FONT=1;;
     -y|--yes)  : ;;
     -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
@@ -29,6 +31,54 @@ info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; }
 ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; }
 warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# --- release-binary fallbacks (used when a tool isn't in the repos) ---
+install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
+  local arch tmp ver
+  case "$(uname -m)" in
+    x86_64)  arch="Linux_x86_64" ;;
+    aarch64) arch="Linux_arm64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  ver="$(curl -sSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  curl -sSfL -o "$tmp/lg.tgz" \
+    "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${ver}_${arch}.tar.gz" \
+    || { rm -rf "$tmp"; return 1; }
+  tar xzf "$tmp/lg.tgz" -C "$tmp" lazygit || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$tmp/lazygit" "$HOME/.local/bin/lazygit"
+  rm -rf "$tmp"
+}
+
+install_neovim_release() {    # https://github.com/neovim/neovim/releases
+  local asset tmp
+  case "$(uname -m)" in
+    x86_64)  asset="nvim-linux-x86_64" ;;
+    aarch64) asset="nvim-linux-arm64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  if ! curl -sSfL -o "$tmp/nvim.tgz" \
+        "https://github.com/neovim/neovim/releases/latest/download/${asset}.tar.gz"; then
+    asset="nvim-linux64"   # legacy asset name (pre-2025 releases)
+    curl -sSfL -o "$tmp/nvim.tgz" \
+      "https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz" \
+      || { rm -rf "$tmp"; return 1; }
+  fi
+  tar xzf "$tmp/nvim.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; rm -rf "$HOME/.local/nvim-dist"
+  mv "$tmp/$asset" "$HOME/.local/nvim-dist"
+  ln -sf "$HOME/.local/nvim-dist/bin/nvim" "$HOME/.local/bin/nvim"
+  rm -rf "$tmp"
+}
+
+nvim_recent() {               # true if an installed nvim is >= 0.9.0
+  have nvim || return 1
+  local v; v="$(nvim --version 2>/dev/null | sed -n '1s/.*v\([0-9][0-9.]*\).*/\1/p')"
+  [ -n "$v" ] && [ "$(printf '%s\n0.9.0\n' "$v" | sort -V | head -1)" = "0.9.0" ]
+}
 
 # --- package manager detection ---
 PM=""
@@ -88,6 +138,22 @@ if [ "$MINIMAL" -eq 0 ]; then
     pkg_install tealdeer || warn "tealdeer failed — see https://github.com/tealdeer-rs/tealdeer"
   fi
   have tldr && tldr --update >/dev/null 2>&1 || true
+  # lazygit — terminal UI for git
+  if ! have lazygit; then
+    info "Installing lazygit…"
+    pkg_install lazygit || install_lazygit_release \
+      || warn "lazygit failed — see https://github.com/jesseduffield/lazygit/releases"
+  fi
+fi
+
+# --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
+if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
+  info "Setting up Neovim + LazyVim…"
+  pkg_install gcc make || warn "build tools (gcc/make) failed — some nvim plugins need them"
+  if ! nvim_recent; then
+    info "Installing a recent Neovim (LazyVim needs >= 0.9)…"
+    install_neovim_release || warn "neovim install failed — see https://github.com/neovim/neovim/releases"
+  fi
 fi
 
 # --- eza (skip in --minimal) ---
@@ -146,6 +212,14 @@ info "Linking config…"
 link "$REPO_DIR/zsh/.zshrc"              "$HOME/.zshrc"
 link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 
+# lazygit config (symlink the file only, so lazygit's own state.yml stays local)
+[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
+
+# Neovim / LazyVim config (whole dir; lazy-lock.json lands in the repo for version pinning)
+if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
+  link "$REPO_DIR/nvim" "$HOME/.config/nvim"
+fi
+
 # --- point git at delta (idempotent: individual keys, safe to re-run) ---
 if have delta; then
   info "Configuring git to use delta…"
@@ -169,4 +243,6 @@ fi
 
 echo
 ok   "Done!  Start your new shell with:  exec zsh"
-info "First launch auto-installs zinit + plugins (one-time, ~10s)."
+info "First zsh launch auto-installs zinit + plugins (one-time, ~10s)."
+[ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ] && \
+  info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."

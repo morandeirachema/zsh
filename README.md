@@ -12,6 +12,8 @@ same shell everywhere — same prompt, same plugins, same keys — from one comm
 - [fd](https://github.com/sharkdp/fd) + [ripgrep](https://github.com/BurntSushi/ripgrep) — fast `find` / `grep` (fd also powers fzf's `Ctrl-T` / `Alt-C`)
 - [delta](https://github.com/dandavison/delta) — syntax-highlighting pager for `git diff` / `log` / `show` (configured automatically)
 - [tealdeer](https://github.com/tealdeer-rs/tealdeer) (`tldr`) — quick, offline command examples
+- [lazygit](https://github.com/jesseduffield/lazygit) — full-screen terminal UI for git (alias `lg`; diffs rendered with delta)
+- [Neovim](https://neovim.io) + [LazyVim](https://www.lazyvim.org) — editor with a batteries-included config, vendored in [`nvim/`](nvim/)
 
 **Plugins** (loaded via zinit **turbo mode** — async, after the prompt, for instant startup):
 zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-history-substring-search,
@@ -58,7 +60,8 @@ the plugins (a one-time ~10s step).
 
 ### Options
 ```bash
-./install.sh --minimal   # zsh + plugins + prompt only (skip eza/bat/fd/rg/font)
+./install.sh --minimal   # zsh + plugins + prompt only (skip extras, lazygit, nvim, font)
+./install.sh --no-nvim   # don't install Neovim/LazyVim or touch ~/.config/nvim
 ./install.sh --no-font   # skip the Nerd Font download
 ./install.sh --no-chsh   # don't change the default login shell
 ```
@@ -81,6 +84,7 @@ so the prompt icons render. In kitty: `font_family JetBrainsMono Nerd Font`.
 | `zi`               | pick a directory to jump to, interactively          |
 | `tldr <cmd>`       | practical examples for a command (offline)          |
 | `git diff`         | paged through delta — syntax-highlighted, `n`/`N` to navigate |
+| `lg`               | open lazygit — the terminal git UI (see below)      |
 
 Handy aliases (see [`zsh/aliases.zsh`](zsh/aliases.zsh)): `ll` / `la` / `lt`
 (eza listings), `gs` / `gl` / `gd` (git), `reload` (restart the shell),
@@ -97,6 +101,46 @@ Handy aliases (see [`zsh/aliases.zsh`](zsh/aliases.zsh)): `ll` / `la` / `lt`
 | **zsh-completions** | A large bundle of extra `Tab`-completion definitions for tools that don't ship their own. |
 | **zsh-you-should-use** | After you run a command that has an alias you defined, reminds you the shorter alias exists — so the aliases actually stick. |
 
+## Editor & git UI
+
+### lazygit (`lg`)
+A full-screen UI for git — stage, commit, branch, rebase, and resolve conflicts
+without memorizing flags; diffs render through delta. Panels down the left
+(**Status · Files · Branches · Commits · Stash**), diff on the right.
+
+| Key | Does |
+| --- | ---- |
+| `?` | show every keybinding for the focused panel |
+| `Tab` / `←` `→` | move between panels; `↑` `↓` (or `j`/`k`) within one |
+| `Space` | context action — stage/unstage a file, checkout a branch, apply a stash |
+| `Enter` | drill in — e.g. stage individual lines/hunks of a file |
+| `c` / `A` | commit staged changes / amend the last commit |
+| `p` / `P` / `f` | pull / push / fetch |
+| `n` / `d` / `M` / `r` | (Branches) new / delete / merge / rebase |
+| `s` / `x` / `q` | stash changes / command menu / quit |
+
+### LazyVim (Neovim)
+Leader key is **`Space`** — press it and pause to get a which-key menu of
+everything. The first `nvim` launch installs all plugins; run `:LazyHealth` to
+check the setup.
+
+| Key | Does |
+| --- | ---- |
+| `<Space>` | which-key popup — discover every mapping |
+| `<Space><Space>` | fuzzy-find files in the project |
+| `<Space>/` | live-grep the whole project (ripgrep) |
+| `<Space>e` | toggle the file explorer |
+| `<Space>,` | switch between open buffers |
+| `<Space>gg` | open lazygit inside Neovim |
+| `<S-h>` / `<S-l>` | previous / next buffer |
+| `gd` · `gr` · `K` | go to definition · references · hover docs |
+| `<Space>ca` · `<Space>cr` | code action · rename symbol |
+| `<Space>l` · `<Space>cm` | Lazy (plugins) · Mason (LSP/tool installer) |
+| `<Space>qq` | quit all |
+
+Extend it by dropping files in [`nvim/lua/plugins/`](nvim/lua/plugins/) — full
+docs at <https://www.lazyvim.org>.
+
 ## Per-machine overrides
 Put anything machine-specific (secrets, local `PATH`, work aliases) in
 `~/.zshrc.local` — it's sourced last and is **git-ignored**.
@@ -110,13 +154,18 @@ Put anything machine-specific (secrets, local `PATH`, work aliases) in
 │   └── aliases.zsh         # aliases (sourced by .zshrc)
 ├── starship/
 │   └── starship.toml       # prompt       ->  ~/.config/starship.toml
+├── nvim/                   # LazyVim config  ->  ~/.config/nvim
+│   ├── init.lua
+│   └── lua/{config,plugins}/…
+├── lazygit/
+│   └── config.yml          # lazygit config  ->  ~/.config/lazygit/config.yml
 ├── CLAUDE.md               # notes for AI assistants working in this repo
 └── README.md
 ```
 
 ## Uninstall / revert
 ```bash
-rm ~/.zshrc ~/.config/starship.toml
+rm ~/.zshrc ~/.config/starship.toml ~/.config/nvim ~/.config/lazygit/config.yml
 mv ~/.zshrc.pre-console.<timestamp> ~/.zshrc   # restore your previous one
 exec zsh
 ```

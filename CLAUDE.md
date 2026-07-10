@@ -64,6 +64,17 @@ values into the tracked files.
 **install.sh portability.** It detects the package manager (apt/dnf/pacman/zypper) via a `pkg_install`
 wrapper and installs user-local where possible (starship and zoxide into `~/.local/bin`, no sudo). New
 dependencies should route through `pkg_install` with a graceful `warn` fallback rather than assuming apt.
+Two tools that are often absent from distro repos (lazygit, neovim) have `install_*_release` helpers that
+fetch the right arch tarball from GitHub into `~/.local/bin` — follow that pattern for similar tools.
+
+**Neovim / LazyVim is vendored, not cloned per machine.** `nvim/` holds the LazyVim *starter* (init.lua +
+`lua/config/*` + `lua/plugins/*`); `install.sh` symlinks the whole dir to `~/.config/nvim`. The LazyVim
+framework itself and all plugins are pulled from the internet by lazy.nvim on the first `nvim` launch — so
+`nvim/` stays tiny. When it runs, lazy.nvim writes `lazy-lock.json` into `~/.config/nvim` (= into this repo,
+via the symlink); commit it to pin identical plugin versions across machines. Editor extras go in
+`nvim/lua/plugins/`. The whole nvim step is gated behind `--no-nvim` (and skipped by `--minimal`) so a
+machine with its own nvim config isn't clobbered. `lazygit/config.yml` is symlinked as a single file (not the
+whole dir) so lazygit's runtime `state.yml` stays local and out of the repo.
 
 ## Conventions
 
