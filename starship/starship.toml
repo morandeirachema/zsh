@@ -1,4 +1,4 @@
-# Starship prompt — rounded "pill" segments (Tokyo-Night palette).
+# Starship prompt — rounded "pill" segments (Catppuccin Mocha palette).
 # Requires a Nerd Font: https://www.nerdfonts.com/
 # Each segment is a self-contained capsule, so empty ones vanish cleanly.
 # Config reference: https://starship.rs/config/
@@ -21,17 +21,18 @@ $character"""
 
 right_format = """$time"""
 
+# Catppuccin Mocha — https://github.com/catppuccin/catppuccin
 [palettes.console]
-crust    = "#16161e"   # dark text on bright pills
-text_lt  = "#c0caf5"   # light text on dark pills
-os_bg    = "#414868"
-dir      = "#7aa2f7"   # blue
-git      = "#9ece6a"   # green
-warn     = "#e0af68"   # yellow  (dirty git)
-lang     = "#2ac3de"   # cyan
-meta     = "#bb9af7"   # purple  (docker)
-dur      = "#9d7cd8"   # muted purple (command time)
-muted    = "#565f89"
+crust    = "#11111b"   # dark text on bright pills
+text_lt  = "#cdd6f4"   # light text on dark pills
+os_bg    = "#45475a"   # surface1
+dir      = "#89b4fa"   # blue
+git      = "#a6e3a1"   # green
+warn     = "#f9e2af"   # yellow  (dirty git)
+lang     = "#94e2d5"   # teal
+meta     = "#cba6f7"   # mauve   (docker)
+dur      = "#585b70"   # surface2 (command time)
+muted    = "#6c7086"   # overlay0 (clock)
 
 [os]
 disabled = false
@@ -51,18 +52,25 @@ Windows = ""
 style = "fg:crust bg:dir"
 format = "[](fg:dir)[  $path$read_only ]($style)[](fg:dir) "
 truncation_length = 3
+truncation_symbol = "…/"
 truncate_to_repo = true
 read_only = "  "
+repo_root_style = "bold fg:crust bg:dir"       # highlight the repo-root folder
+before_repo_root_style = "fg:crust bg:dir"
 [directory.substitutions]
 "Documents" = "󰈙 "
 "Downloads" = " "
 "Pictures"  = " "
+"Music"     = " "
+"Videos"    = " "
+"Projects"  = " "
 "code"      = " "
+".config"   = " "
 
 [git_branch]
 symbol = ""
 style = "fg:crust bg:git"
-format = "[](fg:git)[ $symbol $branch ]($style)[](fg:git) "
+format = "[](fg:git)[ $symbol ]($style)[$branch ](bold fg:crust bg:git)[](fg:git) "
 
 [git_status]
 style = "fg:crust bg:warn"
@@ -125,6 +133,6 @@ style = "fg:muted"
 format = "[  $time ]($style)"
 
 [character]
-success_symbol = "[❯](bold #9ece6a)"
-error_symbol = "[❯](bold #f7768e)"
-vicmd_symbol = "[❮](bold #9ece6a)"
+success_symbol = "[❯](bold #a6e3a1)"
+error_symbol = "[❯](bold #f38ba8)"
+vicmd_symbol = "[❮](bold #a6e3a1)"
