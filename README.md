@@ -23,13 +23,17 @@ zsh-autosuggestions, zsh-completions, fzf-tab, fast-syntax-highlighting, zsh-his
 
 `install.sh` already moves any existing `~/.zshrc` to
 `~/.zshrc.pre-console.<timestamp>` before linking. For a full, restorable
-snapshot (history, oh-my-zsh customizations, etc.), run this first:
+snapshot (history, oh-my-zsh customizations, nvim/LazyVim, etc.), run this first.
+
+Backups are kept under **`~/dotfiles-backups/`** — each snapshot is its own
+timestamped folder (plus a `.tar.gz`) with a `RESTORE.md` inside:
 
 ```bash
-BK=~/shell-backup-$(date +%Y%m%d-%H%M%S); mkdir -p "$BK"
+BK=~/dotfiles-backups/shell-backup-$(date +%Y%m%d-%H%M%S); mkdir -p "$BK"
 cp -a ~/.zshrc ~/.zshenv ~/.zprofile ~/.zsh_history "$BK"/ 2>/dev/null
 [ -d ~/.oh-my-zsh/custom ] && cp -a ~/.oh-my-zsh/custom "$BK"/omz-custom
-tar czf "$BK.tar.gz" -C ~ "$(basename "$BK")" && echo "Backup: $BK.tar.gz"
+[ -d ~/.config/nvim ]      && cp -a ~/.config/nvim     "$BK"/nvim
+tar czf "$BK.tar.gz" -C ~/dotfiles-backups "$(basename "$BK")" && echo "Backup: $BK.tar.gz"
 ```
 
 Restore it any time with:
