@@ -18,8 +18,9 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
 ## Supply chain
 - Tools install from your **distro/Homebrew package manager first**; the piped
   `curl | sh` installers (starship, zoxide) are a labelled fallback only.
-- **Release binaries are checksum-verified**: lazygit and neovim downloads are
-  SHA256-checked against their published checksums and refused on mismatch.
+- **Release binaries are checksum-verified**: lazygit, neovim, carapace and fabric
+  downloads are SHA256-checked against their published checksums and refused on
+  mismatch.
 - **Pin zinit** for reproducible/air-gapped builds by exporting `ZINIT_PIN=<sha>`
   before the shell starts (e.g. in `~/.zshenv`).
 - **Air-gapped:** run `./install.sh --offline` to skip every internet fetch
@@ -47,6 +48,18 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   `SSH_AUTH_SOCK` at the agent's socket from `~/.zshrc.local` — e.g. 1Password
   `export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"`. This keeps private keys in
   the vault/HSM (never on disk) — the PAM-friendly setup.
+
+## Passwords & AI keys
+- **`pass`** encrypts every secret to **your own GPG key** — nothing is installed
+  with a key, and the store (`~/.password-store`) is yours to keep local or push to
+  a **private** git remote. It complements the external SSH-agent setup above; use
+  whichever fits the host. `GPG_TTY` is exported so `pass` can prompt for your
+  passphrase in the terminal.
+- **`fabric`** needs a provider API key. Run `fabric --setup` (it writes to
+  `~/.config/fabric`, not the repo) and keep the key in `~/.zshrc.local`
+  (git-ignored). Prefix any one-off `KEY=… fabric …` invocation with a leading
+  space so it never lands in `~/.zsh_history` (`HIST_IGNORE_SPACE`). The binary is
+  installed from a **SHA256-verified** GitHub release, same as lazygit/neovim.
 
 ## Undo
 `./uninstall.sh` removes only the symlinks that point into this repo and the

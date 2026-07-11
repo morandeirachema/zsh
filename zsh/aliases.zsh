@@ -37,11 +37,52 @@ if [[ -n "${_FD_BIN:-}" ]]; then
 fi
 unset _FD_BIN
 
+# --- fzf previews: bat for files, eza-tree for dirs (all guarded) ---
+# Ctrl-T previews the file, Alt-C previews the directory, Ctrl-R shows the full
+# command. Toggle any preview with Ctrl-/.  Read lazily by fzf at invoke time.
+if command -v fzf >/dev/null; then
+  # Use $commands (real executables only) — not `command -v`, which would match the
+  # `bat` alias we set above and break the preview under fzf's plain `sh -c`.
+  if   (( ${+commands[bat]} ));    then _fzcat='bat --color=always --style=numbers --line-range=:200 {}'
+  elif (( ${+commands[batcat]} )); then _fzcat='batcat --color=always --style=numbers --line-range=:200 {}'
+  else _fzcat='cat {}'; fi
+  if (( ${+commands[eza]} )); then _fztree='eza --tree --level=2 --color=always --icons=auto {}'
+  else _fztree='ls -1 {}'; fi
+  export FZF_CTRL_T_OPTS="--preview '[ -d {} ] && $_fztree || $_fzcat' --preview-window=right,60%,border-left --bind ctrl-/:toggle-preview"
+  export FZF_ALT_C_OPTS="--preview '$_fztree' --preview-window=right,50%,border-left --bind ctrl-/:toggle-preview"
+  export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=down,3,wrap --bind ctrl-/:toggle-preview"
+  unset _fzcat _fztree
+fi
+
 # --- rg (ripgrep) — fast recursive grep ---
 command -v rg >/dev/null && alias rgi='rg -i'
 
 # --- lazygit — terminal UI for git ---
 command -v lazygit >/dev/null && alias lg='lazygit'
+
+# --- pass — GPG-encrypted password store (https://www.passwordstore.org) ---
+if command -v pass >/dev/null; then
+  alias pw='pass'
+  alias pwc='pass -c'                      # copy a secret to the clipboard
+  # passf: fuzzy-pick an entry and copy it to the clipboard (needs fzf)
+  if command -v fzf >/dev/null; then
+    passf() {
+      local store="${PASSWORD_STORE_DIR:-$HOME/.password-store}" entry
+      entry="$(command find "$store" -name '*.gpg' 2>/dev/null \
+        | sed -e "s|$store/||" -e 's|\.gpg$||' | fzf --prompt='pass> ')" || return
+      [[ -n "$entry" ]] && pass -c "$entry"
+    }
+  fi
+fi
+
+# --- fabric — run AI "patterns" as Unix filters (https://github.com/danielmiessler/fabric) ---
+if command -v fabric >/dev/null; then
+  alias fab='fabric'
+  alias fsum='fabric --pattern summarize'          # e.g.  cat notes.md | fsum
+  alias fexplain='fabric --pattern explain_code'   # e.g.  git diff | fexplain
+  ytsum() { fabric -y "$1" --pattern summarize; }  # summarize a YouTube URL
+  # First run: `fabric --setup`. Keep provider API keys in ~/.zshrc.local, not the repo.
+fi
 
 # --- neovim as the default editor ---
 if command -v nvim >/dev/null; then

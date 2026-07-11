@@ -103,8 +103,8 @@ zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'   # case-insensitive
 zstyle ':completion:*' menu no
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*:descriptions' format '[%d]'
-# fzf-tab previews
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls -1 --color=always $realpath'
+# fzf-tab previews (eza tree if present, else plain ls — both degrade gracefully)
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always --icons=auto "$realpath" 2>/dev/null || ls -1 --color=always "$realpath"'
 
 # ------------------------------------------------------------
 #  fzf — fuzzy finder (Ctrl-R history, Ctrl-T files, Alt-C cd)

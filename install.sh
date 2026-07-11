@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--minimal] [--server] [--offline] [--no-nvim] [--no-font] [--no-chsh] [-y]
+#  Usage: ./install.sh [--minimal] [--server] [--offline] [--no-nvim] [--no-fabric] [--no-font] [--no-chsh] [-y]
 #    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
 #    --server    headless box: skip the Nerd Font (it lives on your client, not the server)
 #    --offline   air-gapped: no internet fetches — packages must come from your mirror,
 #                and skip the curl-installer fallbacks, release binaries, and font download
 #    --xdg       XDG layout: put .zshrc under ZDOTDIR=~/.config/zsh (keeps $HOME tidy)
 #    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
+#    --no-fabric don't install fabric (the AI-patterns CLI)
 #    --no-font   don't download the Nerd Font
 #    --no-chsh   don't change the default login shell
 #    -y|--yes    non-interactive
@@ -19,19 +20,20 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 mkdir -p "$LOGDIR" 2>/dev/null || true
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; OFFLINE=0; XDG=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; OFFLINE=0; XDG=0
 
 for a in "$@"; do
   case "$a" in
-    --no-font) NO_FONT=1;;
-    --server)  NO_FONT=1;;
-    --offline) OFFLINE=1; NO_FONT=1;;
-    --xdg)     XDG=1;;
-    --no-chsh) NO_CHSH=1;;
-    --no-nvim) NO_NVIM=1;;
-    --minimal) MINIMAL=1; NO_FONT=1;;
-    -y|--yes)  : ;;
-    -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    --no-font)   NO_FONT=1;;
+    --server)    NO_FONT=1;;
+    --offline)   OFFLINE=1; NO_FONT=1;;
+    --xdg)       XDG=1;;
+    --no-chsh)   NO_CHSH=1;;
+    --no-nvim)   NO_NVIM=1;;
+    --no-fabric) NO_FABRIC=1;;
+    --minimal)   MINIMAL=1; NO_FONT=1;;
+    -y|--yes)    : ;;
+    -h|--help)   grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
     *) echo "unknown option: $a"; exit 1;;
   esac
 done
@@ -101,6 +103,42 @@ install_carapace_release() {  # https://github.com/carapace-sh/carapace-bin
   fi
   tar xzf "$tmp/cb.tgz" -C "$tmp" carapace || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/carapace" "$HOME/.local/bin/carapace"
+  rm -rf "$tmp"
+}
+
+install_fabric_release() {    # https://github.com/danielmiessler/fabric
+  local os arch asset tmp ver want got
+  case "$(uname -s)" in
+    Linux)  os="Linux" ;;
+    Darwin) os="Darwin" ;;
+    *) return 1 ;;
+  esac
+  case "$(uname -m)" in
+    x86_64|amd64)  arch="x86_64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *) return 1 ;;
+  esac
+  asset="fabric_${os}_${arch}.tar.gz"
+  tmp="$(mktemp -d)"
+  ver="$(curl -sSL https://api.github.com/repos/danielmiessler/fabric/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  curl -sSfL -o "$tmp/fabric.tgz" \
+    "https://github.com/danielmiessler/fabric/releases/download/v${ver}/${asset}" \
+    || { rm -rf "$tmp"; return 1; }
+  # verify SHA256 against the release's published checksums before trusting it
+  if curl -sSfL -o "$tmp/sums" \
+       "https://github.com/danielmiessler/fabric/releases/download/v${ver}/fabric_${ver}_checksums.txt"; then
+    want="$(grep -F "$asset" "$tmp/sums" | awk '{print $1}' | head -1)"
+    got="$(sha256_of "$tmp/fabric.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "fabric checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch fabric checksums — installing unverified"
+  fi
+  tar xzf "$tmp/fabric.tgz" -C "$tmp" fabric || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$tmp/fabric" "$HOME/.local/bin/fabric"
   rm -rf "$tmp"
 }
 
@@ -243,6 +281,19 @@ if [ "$MINIMAL" -eq 0 ]; then
           || warn "tmux plugin ${tp#*/} clone failed"; }
     done
   fi
+  # pass — GPG-encrypted Unix password store (needs your own GPG key; see SECURITY.md)
+  if ! have pass; then
+    info "Installing pass…"
+    pkg_install pass || pkg_install password-store || warn "pass failed — see https://www.passwordstore.org"
+  fi
+  # fabric — run AI "patterns" as Unix filters (skip with --no-fabric; add an API
+  # key afterwards via `fabric --setup`, kept in ~/.zshrc.local — never the repo)
+  if [ "$NO_FABRIC" -eq 0 ] && ! have fabric; then
+    info "Installing fabric…"
+    if [ "$OFFLINE" -eq 1 ]; then warn "offline: install fabric from your mirror"
+    else install_fabric_release || warn "fabric failed — see https://github.com/danielmiessler/fabric/releases"
+    fi
+  fi
 fi
 
 # --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
@@ -354,6 +405,9 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
 # tmux config
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+# tmux-sessionizer helper on PATH (bound to prefix+f in tmux.conf)
+[ "$MINIMAL" -eq 0 ] && { mkdir -p "$HOME/.local/bin"; \
+  link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
 
 # Neovim / LazyVim config (whole dir; lazy-lock.json lands in the repo for version pinning)
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then

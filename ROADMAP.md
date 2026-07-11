@@ -58,6 +58,19 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
 - **Per-host profiles** — `~/.zshrc.local` hook + `zshrc.local.example` show a
   prod-vs-staging prompt-accent pattern.
 
+## ✅ Done (video-ideas P1 batch)
+Ideas taken from three Mischa van den Burg videos (see
+[`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)):
+- **tmux-sessionizer** — `prefix f` fzf-jumps to a project as a tmux session
+  (`scripts/tmux-sessionizer.sh`, on `PATH`; roots via `TMUX_SESSIONIZER_PATHS`).
+- **fabric** — AI patterns as Unix filters; SHA256-verified release installer +
+  `--no-fabric` gate; keys stay in `~/.zshrc.local` (`fab`/`fsum`/`fexplain`/`ytsum`).
+- **pass** — GPG-encrypted password store (`pw`/`pwc`/`passf`); documented in `SECURITY.md`.
+- **Deeper fzf previews** — bat for files, eza-tree for dirs in Ctrl-T / Alt-C /
+  fzf-tab, `Ctrl-/` toggles the preview.
+
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - `install.sh --dry-run` and a `doctor`/`checkhealth` subcommand for the shell.
+- Video-ideas P2: SSH port-forward helpers · optional Alacritty config · Synology
+  NAS sync pattern (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)).

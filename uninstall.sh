@@ -31,6 +31,7 @@ unlink_if_ours "$CONFIG/zsh/.zshrc"            # --xdg layout
 unlink_if_ours "$CONFIG/starship.toml"
 unlink_if_ours "$CONFIG/lazygit/config.yml"
 unlink_if_ours "$CONFIG/tmux/tmux.conf"
+unlink_if_ours "$HOME/.local/bin/tmux-sessionizer"
 unlink_if_ours "$CONFIG/nvim"
 
 # Remove the git-delta include (leave the rest of ~/.gitconfig untouched).

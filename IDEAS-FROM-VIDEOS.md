@@ -1,0 +1,161 @@
+# Improvement ideas — distilled from 3 videos
+
+> **Status:** **P1 implemented** on 2026-07-11 (tmux-sessionizer, fabric, pass,
+> deeper fzf previews) — see the *Done* markers below and `ROADMAP.md`. P2/P3
+> remain as a shortlist to evaluate, mapped onto what `console` already has.
+> **Compiled:** 2026-07-11.
+
+## Sources
+
+All three are by **Mischa van den Burg** (DevOps / stateless-workstation focus):
+
+1. My Entire Neovim + Tmux + AI Workflow (2026 Update) — <https://www.youtube.com/watch?v=fjoGZ90bOzw>
+2. How I Rebuilt My Entire Workstation After Quitting Arch Linux — <https://www.youtube.com/watch?v=S6T5M4jLqR8>
+3. 5 CLI Tools That Actually Changed How I Work in 2026 — <https://www.youtube.com/watch?v=tmnd3M1k5Jw>
+
+His stack overlaps ours a lot (zsh + tmux + fzf + LazyVim + a "git-centered stateless
+workstation" philosophy), so the useful signal is the handful of tools/patterns we **don't**
+have yet. Much of the videos is workstation-level (immutable OS, window manager, email
+client) and is **out of scope** for a portable shell-dotfiles repo — see the last section.
+
+## TL;DR — what's worth adding
+
+| # | Idea | In videos | Fit | Effort | Priority / status |
+| - | ---- | --------- | --- | ------ | ----------------- |
+| 1 | **fabric** — AI patterns piped through the CLI | 1, 3 | High | M | **P1 · ✅ done** |
+| 2 | **tmux-sessionizer** — fzf-jump to a project as a tmux session | 1, 3 | High | S | **P1 · ✅ done** |
+| 3 | **pass** — GPG-encrypted Unix password store | 2, 3 | High | S–M | **P1 · ✅ done** |
+| 4 | **Deeper fzf previews** — bat/eza in Ctrl-T / Alt-C / fzf-tab | 3 | High | S | **P1 · ✅ done** |
+| 5 | **SSH workflow** — port-forward helpers + `config.local` include | 1, 3 | Med | S | P2 |
+| 6 | **Alacritty config** — optional, Catppuccin + JetBrainsMono | 1 | Med | M | P2 |
+| 7 | **NAS sync pattern** — pass-store / backups → Synology NAS | 2 | Med | S | P2 |
+| 8 | **Notes helper** — Zettelkasten / Johnny-Decimal capture | 1, 2 | Low | S | P3 |
+| 9 | **chezmoi** — dotfile manager instead of symlinks | 1 | Low | L | Evaluate → likely decline |
+
+Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
+
+---
+
+## P1 — ✅ done (high value, in-scope, recurring in the videos)
+
+> Implemented 2026-07-11. Notes below are the original rationale + how each landed
+> in the repo; the shipped behavior matches. See `README.md` / `ROADMAP.md`.
+
+### 1. `fabric` — AI patterns from the command line
+- **What:** Daniel Miessler's `fabric` runs reusable AI "patterns" (summarize, extract_wisdom,
+  write_commit, etc.) as Unix filters. Video 1 pipes its output straight into Neovim; video 3
+  lists it as one of the 5 tools. It's the only tool that shows up across **both** relevant videos.
+  https://github.com/danielmiessler/fabric
+- **Maps to us:** a new optional dependency + guarded aliases, exactly like `lazygit`/`neovim`.
+  - It's a Go binary not in distro repos → add an `install_fabric_release` GitHub-release helper
+    (SHA256-verified, same shape as `install_lazygit_release`) with a `--no-fabric` gate.
+  - Guarded aliases in `aliases.zsh` (`command -v fabric` first), e.g. a `fabric` pipe helper and
+    a `summarize`/`explain` shortcut.
+  - **Secrets:** it needs an API key → that lives in `~/.zshrc.local` (machine-specific), never in
+    the repo. Document in `SECURITY.md`.
+- **Watch out:** no network at zsh startup (repo rule) — fabric is invoked on demand only, so fine.
+
+### 2. `tmux-sessionizer` — jump to any project as a tmux session
+- **What:** the "tmux as a window manager" pattern from videos 1 & 3: one keypress → fzf list of
+  project dirs → attach/create a named tmux session for it. Origin ThePrimeagen; Mischa uses a variant.
+- **Maps to us:** we already ship `tmux/tmux.conf` **and** `fzf` **and** `fd` — this is the cheapest
+  high-value add. A small self-contained `scripts/tmux-sessionizer.sh` (graceful if fzf/fd absent),
+  bound in `tmux.conf` (`bind -r f run-shell "tmux neww tmux-sessionizer"`) and optionally a zsh
+  `Ctrl-f` binding. `install.sh` symlinks it into `~/.local/bin`.
+- **Why it fits:** self-contained, no new heavy deps, matches the existing "keyboard-centered" prompt/tmux setup.
+
+### 3. `pass` — GPG-encrypted password store
+- **What:** the standard Unix password manager (GPG-encrypted files in a git repo). Featured in
+  videos 2 & 3. https://www.passwordstore.org/
+- **Maps to us:** `GPG_TTY` is **already exported** in `.zshrc`, so half the groundwork is done.
+  - Install via `pkg_install pass` (it's in apt/dnf/pacman/brew) — no release-tarball helper needed.
+  - Guarded aliases + an optional fzf "passmenu"-style picker (ties into idea #4).
+  - The GPG key + the store repo are per-machine → `~/.zshrc.local` / documented, not committed.
+  - **Positioning:** complements, doesn't replace, the existing 1Password/Vault ssh-agent notes in
+    `SECURITY.md` — add `pass` as the lightweight, self-hosted option there.
+
+### 4. Deeper fzf previews
+- **What:** video 3's fzf deep-dive is mostly about rich previews. We already have Ctrl-R / Ctrl-T /
+  Alt-C wired and fd driving fzf, but the **preview** is minimal (fzf-tab `cd` shows plain `ls`).
+- **Maps to us:** small edits in `aliases.zsh` / `.zshrc`, all behind existing `command -v` guards:
+  - `FZF_CTRL_T_OPTS` → `bat`/`batcat` file preview.
+  - `FZF_ALT_C_OPTS` → `eza --tree` directory preview.
+  - fzf-tab `cd` preview → `eza`/`bat` instead of bare `ls`.
+  - (Optional) reuse the same picker for the `pass` menu in idea #3.
+- **Why it fits:** pure polish on tooling we already ship; degrades gracefully.
+
+---
+
+## P2 — nice, but narrower payoff
+
+### 5. SSH workflow helpers
+- Video 3 spends a chapter on "SSH beyond logging in" + port-forwarding into remote containers.
+- **Maps to us:** a few guarded aliases (e.g. a local-forward helper) plus a documented
+  `Include ~/.ssh/config.local` pattern so host entries stay machine-specific and out of the repo
+  (same philosophy as `~/.zshrc.local`). Keep it doc + example; never commit real hosts.
+
+### 6. Optional Alacritty config
+- Video 1's terminal is Alacritty + zsh + tmux. We're deliberately terminal-agnostic today.
+- **Maps to us:** an **opt-in** `alacritty/alacritty.toml` (Catppuccin Mocha + JetBrainsMono Nerd
+  Font to match the prompt), symlinked only behind a flag like the nvim step. Low risk since it's
+  gated; skip on `--minimal`/`--server`.
+
+### 7. Synology NAS sync pattern
+- Video 2 syncs the password store / files to a Synology NAS. **We already know the user's NAS**
+  (192.168.1.211, SMB — see the `nas-backup-target` memory), so this is a natural tie-in.
+- **Maps to us:** a documented, machine-specific pattern (in `~/.zshrc.local` + a `scripts/` helper)
+  to rsync the `pass` store or install backups to the NAS. Keep the host/paths out of the tracked
+  files — example only.
+
+---
+
+## P3 — later / low priority
+
+### 8. Notes capture (Zettelkasten / Johnny-Decimal)
+- Both video 1 (Zettelkasten update) and video 2 (Johnny-Decimal file org) cover note systems.
+- **Maps to us:** at most a tiny `note`/`zk` capture alias opening a dated markdown file in `$EDITOR`
+  (nvim is already the default). Personal-workflow territory — only if the user wants it.
+  https://johnnydecimal.com/
+
+---
+
+## Evaluate, then most likely **decline**
+
+### 9. `chezmoi` instead of symlinks
+- Video 1 manages dotfiles with **chezmoi** (templating, secrets, per-machine diffs).
+  https://www.chezmoi.io/
+- **Reality for us:** the repo's whole model is the **symlink** approach — documented in `CLAUDE.md`,
+  covered by CI, with `install.sh`/`uninstall.sh` built around it. Switching to chezmoi is a
+  re-architecture, not an add-on, and we'd lose the "edit repo file = edit live shell" property.
+- **Recommendation:** don't migrate. If per-machine templating ever becomes painful, revisit — but
+  `~/.zshrc.local` + the accent-profile pattern already cover the real cases. Noted for completeness.
+
+---
+
+## Deliberately out of scope (workstation-level, not shell-dotfiles)
+
+These are big parts of the videos but don't belong in a portable zsh-dotfiles repo. Listed so the
+decision is explicit, not an oversight:
+
+- **Immutable OS** — Fedora Atomic / rpm-ostree / Cosmic / Sway vs Hyprland (videos 1 & 2).
+- **Containerized dev envs** — toolbox, flatpak, Podman, DevPod, devcontainers (videos 1 & 2).
+  https://containers.dev · https://devpod.sh
+- **Terminal email** — Aerc (video 1). https://aerc-mail.org
+- **Self-hosted git** — Forgejo (video 1). https://forgejo.org
+- Browser choice / privacy (video 1).
+
+If any of these are wanted, they should be their **own** repo/setup, not folded into `console`.
+
+---
+
+## Suggested order if we proceed
+
+1. **#2 tmux-sessionizer** + **#4 fzf previews** — small, self-contained, zero new heavy deps,
+   immediate daily payoff.
+2. **#3 pass** — groundwork (`GPG_TTY`) already exists; slots into `SECURITY.md`.
+3. **#1 fabric** — the biggest new capability; needs a release-installer helper + a `--no-fabric` gate.
+4. Then P2 items (SSH, Alacritty, NAS) as appetite allows.
+
+Every item above must keep the repo's hard rules: `command -v` graceful degradation, no network at
+startup, secrets/host-specifics only in `~/.zshrc.local`, route installs through `pkg_install` (or a
+SHA256-verified release helper), and stay CI-green.
