@@ -234,7 +234,10 @@ Leader is **`Space`** — press and pause for a which-key menu of everything. Fi
 | `<Space>e` | file explorer | `<Space>ca` · `<Space>cr` | code action · rename |
 | `<Space>,` | switch buffers | `<Space>l` · `<Space>cm` | Lazy · Mason |
 
-Extend it by dropping files in [`nvim/lua/plugins/`](nvim/lua/plugins/).
+Ships with **Catppuccin Mocha** (matching the shell + tmux) and LazyVim language
+extras for **Docker, Terraform, YAML, JSON, Markdown, Python** (LSP + formatters +
+treesitter). Toggle more with `:LazyExtras`; extend via
+[`nvim/lua/plugins/`](nvim/lua/plugins/).
 
 ---
 
@@ -247,6 +250,9 @@ truecolor, and a Catppuccin status bar matching the prompt. Prefix stays `Ctrl-b
 | --- | ---- |
 | `prefix` `|` / `prefix` `-` | split vertical / horizontal (keeps cwd) |
 | `prefix` `h` `j` `k` `l` | move between panes (vi-style) |
+| `Alt` + arrows | switch panes **without** the prefix |
+| `prefix` `H` `J` `K` `L` | resize the pane (repeatable) |
+| `prefix` `[` then `v` / `y` | select / copy to the system clipboard (OSC52 — works over SSH) |
 | `prefix` `c` | new window (keeps cwd) |
 | `prefix` `r` | reload the config |
 
