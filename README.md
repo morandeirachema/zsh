@@ -255,6 +255,14 @@ truecolor, and a Catppuccin status bar matching the prompt. Prefix stays `Ctrl-b
 | `prefix` `[` then `v` / `y` | select / copy to the system clipboard (OSC52 — works over SSH) |
 | `prefix` `c` | new window (keeps cwd) |
 | `prefix` `r` | reload the config |
+| `prefix` `Ctrl-s` / `Ctrl-r` | save / restore the session (resurrect) |
+
+Sessions **persist across reboots** via
+[tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) +
+[tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) (auto-save every
+15 min, auto-restore on start). Pane *contents* are deliberately **not** saved, so
+scrollback secrets never hit disk. Plugins install to `~/.tmux/plugins/` (skipped
+by `--minimal`/`--offline`).
 
 ---
 

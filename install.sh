@@ -199,6 +199,15 @@ if [ "$MINIMAL" -eq 0 ]; then
   have carapace || { info "Installing carapace…"; pkg_install carapace || warn "carapace not packaged — see https://carapace.sh (brew/AUR/releases)"; }
   # tmux — persistent terminal sessions (essential over SSH)
   have tmux || { info "Installing tmux…"; pkg_install tmux || warn "tmux failed"; }
+  # tmux plugins: tpm + resurrect + continuum (session persistence across reboots)
+  if have tmux && [ "$OFFLINE" -eq 0 ]; then
+    for tp in tmux-plugins/tpm tmux-plugins/tmux-resurrect tmux-plugins/tmux-continuum; do
+      dest="$HOME/.tmux/plugins/${tp#*/}"
+      [ -d "$dest" ] || { info "Cloning tmux plugin ${tp#*/}…"
+        git clone --depth 1 "https://github.com/$tp" "$dest" >/dev/null 2>&1 \
+          || warn "tmux plugin ${tp#*/} clone failed"; }
+    done
+  fi
 fi
 
 # --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
