@@ -64,3 +64,33 @@ jobs:
             zsh -ic "exit 0"                          && echo "✓ interactive zsh loads"
             echo "smoke OK on ${{ matrix.name }}"
           '
+
+  extras:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu
+            image: ubuntu:24.04
+            prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
+          - name: fedora
+            image: fedora:latest
+            prep: dnf install -y sudo git curl zsh
+          - name: arch
+            image: archlinux:latest
+            prep: pacman -Sy --noconfirm sudo git curl zsh
+    steps:
+      - uses: actions/checkout@v4
+      # Non-minimal install (minus the slow nvim + font) so the extras path is
+      # actually exercised: pass, fabric (SHA256-verified GitHub release),
+      # tmux-sessionizer symlink, and the fzf preview opts. Asserted by
+      # scripts/ci-extras-check.sh (fabric is a soft check — network dependent).
+      - name: Extras (pass · fabric · tmux-sessionizer) on ${{ matrix.name }}
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
+            ${{ matrix.prep }}
+            ./install.sh --no-nvim --no-font --no-chsh -y
+            bash scripts/ci-extras-check.sh ${{ matrix.name }}
+          '

@@ -67,7 +67,11 @@ Ideas taken from three Mischa van den Burg videos (see
   `--no-fabric` gate; keys stay in `~/.zshrc.local` (`fab`/`fsum`/`fexplain`/`ytsum`).
 - **pass** — GPG-encrypted password store (`pw`/`pwc`/`passf`); documented in `SECURITY.md`.
 - **Deeper fzf previews** — bat for files, eza-tree for dirs in Ctrl-T / Alt-C /
-  fzf-tab, `Ctrl-/` toggles the preview.
+  fzf-tab, `Ctrl-/` toggles the preview. Uses colon preview-window syntax so it
+  never errors on old fzf (< 0.28), verified against fzf 0.24 / 0.29 / 0.67.
+- **CI now covers the extras path** — a non-minimal `extras` job installs
+  pass/fabric/tmux-sessionizer on Ubuntu/Fedora/Arch and asserts them via
+  `scripts/ci-extras-check.sh` (fabric is a soft check — network dependent).
 
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).

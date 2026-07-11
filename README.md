@@ -411,8 +411,9 @@ doesn't uninstall packages.
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
 │   ├── tmux-sessionizer.sh # fzf project switcher  ->  ~/.local/bin/tmux-sessionizer
+│   ├── ci-extras-check.sh  # CI: assert pass/fabric/sessionizer installed
 │   └── vendor-plugins.sh   # pre-seed plugins for offline hosts
-├── .github/workflows/ci.yml    # shellcheck + lint + multi-distro smoke test
+├── .github/workflows/ci.yml    # shellcheck + lint + minimal & extras multi-distro smoke
 ├── CLAUDE.md · SECURITY.md · ROADMAP.md
 └── README.md
 ```
