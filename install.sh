@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--minimal] [--server] [--no-nvim] [--no-font] [--no-chsh] [-y]
+#  Usage: ./install.sh [--minimal] [--server] [--offline] [--no-nvim] [--no-font] [--no-chsh] [-y]
 #    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
 #    --server    headless box: skip the Nerd Font (it lives on your client, not the server)
+#    --offline   air-gapped: no internet fetches — packages must come from your mirror,
+#                and skip the curl-installer fallbacks, release binaries, and font download
 #    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
 #    --no-font   don't download the Nerd Font
 #    --no-chsh   don't change the default login shell
@@ -13,12 +15,13 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; OFFLINE=0
 
 for a in "$@"; do
   case "$a" in
     --no-font) NO_FONT=1;;
     --server)  NO_FONT=1;;
+    --offline) OFFLINE=1; NO_FONT=1;;
     --no-chsh) NO_CHSH=1;;
     --no-nvim) NO_NVIM=1;;
     --minimal) MINIMAL=1; NO_FONT=1;;
@@ -131,6 +134,7 @@ pkg_install() {
 
 info "Repo:            $REPO_DIR"
 info "Package manager: ${PM:-none detected}"
+[ "$OFFLINE" -eq 1 ] && info "Offline mode: no internet fetches (packages assumed from your mirror)."
 
 # shellcheck disable=SC2086  # $SUDO may be empty
 [ "$PM" = apt ] && { $SUDO apt-get update -y || true; }
@@ -171,12 +175,14 @@ if [ "$MINIMAL" -eq 0 ]; then
     info "Installing tealdeer (tldr)…"
     pkg_install tealdeer || warn "tealdeer failed — see https://github.com/tealdeer-rs/tealdeer"
   fi
-  have tldr && tldr --update >/dev/null 2>&1 || true
+  [ "$OFFLINE" -eq 0 ] && have tldr && tldr --update >/dev/null 2>&1 || true
   # lazygit — terminal UI for git
   if ! have lazygit; then
     info "Installing lazygit…"
-    pkg_install lazygit || install_lazygit_release \
-      || warn "lazygit failed — see https://github.com/jesseduffield/lazygit/releases"
+    if pkg_install lazygit; then :
+    elif [ "$OFFLINE" -eq 1 ]; then warn "offline: install lazygit from your mirror"
+    else install_lazygit_release || warn "lazygit failed — see https://github.com/jesseduffield/lazygit/releases"
+    fi
   fi
 fi
 
@@ -189,8 +195,12 @@ if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
   else
     pkg_install gcc make || warn "build tools (gcc/make) failed — some nvim plugins need them"
     if ! nvim_recent; then
-      info "Installing a recent Neovim (LazyVim needs >= 0.9)…"
-      install_neovim_release || warn "neovim install failed — see https://github.com/neovim/neovim/releases"
+      if [ "$OFFLINE" -eq 1 ]; then
+        pkg_install neovim || warn "offline: install neovim (>= 0.9) from your mirror"
+      else
+        info "Installing a recent Neovim (LazyVim needs >= 0.9)…"
+        install_neovim_release || warn "neovim install failed — see https://github.com/neovim/neovim/releases"
+      fi
     fi
   fi
 fi
@@ -206,9 +216,13 @@ fi
 if ! have starship; then
   info "Installing starship…"
   pkg_install starship || {
-    warn "starship not packaged here — using the official installer (curl | sh)"
-    curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
-      || warn "starship install failed"
+    if [ "$OFFLINE" -eq 1 ]; then
+      warn "offline: install starship from your mirror"
+    else
+      warn "starship not packaged here — using the official installer (curl | sh)"
+      curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
+        || warn "starship install failed"
+    fi
   }
 fi
 
@@ -217,9 +231,13 @@ fi
 if ! have zoxide; then
   info "Installing zoxide…"
   pkg_install zoxide || {
-    warn "zoxide not packaged here — using the official installer (curl | sh)"
-    curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh \
-      || warn "zoxide install failed"
+    if [ "$OFFLINE" -eq 1 ]; then
+      warn "offline: install zoxide from your mirror"
+    else
+      warn "zoxide not packaged here — using the official installer (curl | sh)"
+      curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh \
+        || warn "zoxide install failed"
+    fi
   }
 fi
 

@@ -22,6 +22,10 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   SHA256-checked against their published checksums and refused on mismatch.
 - **Pin zinit** for reproducible/air-gapped builds by exporting `ZINIT_PIN=<sha>`
   before the shell starts (e.g. in `~/.zshenv`).
+- **Air-gapped:** run `./install.sh --offline` to skip every internet fetch
+  (packages then come from your internal mirror). The one remaining network step
+  is zinit cloning itself + plugins on first shell launch — pre-seed
+  `~/.local/share/zinit` and the plugin repos on locked-down hosts.
 
 ## Completions & PATH
 - `compinit` runs with `-i`: it keeps the security check and **skips** insecure

@@ -26,20 +26,19 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   mismatch. `ZINIT_PIN` env var pins zinit to a commit/tag for reproducible builds.
 - **Fixed** a latent bug (found by CI): `.zshrc` left `$?=1` with no
   `~/.zshrc.local`, which showed a false error on the first prompt.
+- **`--offline` mode** — skips every internet fetch (curl installers, release
+  binaries, font); packages come from your mirror.
+- **Secrets hygiene** — `SECURITY.md` documents history/secret handling; `GPG_TTY`
+  is set for signing; `zsh/zshrc.local.example` is a starter template; ssh-agent
+  is left to the platform with an opt-in snippet.
 
 ## P1 — do next
 - **Deeper pinning.** Record a plugin lockfile (zinit `ice ver`/`snippet`) and
   pin tool versions per-distro for fully reproducible rebuilds. Verify the
   starship/zoxide fallback installers too (or drop them on hardened hosts).
-- **Air-gapped / offline mode.** A `--offline` path that skips every network
-  fetch and a documented way to vendor zinit + plugins for locked-down hosts
-  (many prod servers can't reach github.com).
-- **Secrets hygiene doc + guardrails.** Document that space-prefixed commands are
-  kept out of history (`HIST_IGNORE_SPACE` is on); add optional `ssh-agent` /
-  `GPG_TTY` bootstrapping in a commented block; never echo secrets in the prompt.
-- **CI in the repo.** GitHub Actions running `shellcheck` + `shfmt` on
-  `install.sh`, a `zsh -n` / `bash -n` lint, and a container smoke-test that runs
-  `./install.sh --server -y` on ubuntu/fedora/arch images.
+- **Air-gapped: vendor the plugins.** `--offline` skips fetches, but a fully
+  locked-down host still needs zinit + plugins pre-seeded into
+  `~/.local/share/zinit`; document/script that bundle.
 
 ## P2 — nice
 - **tmux config** (`tmux/tmux.conf`, symlinked) — persistent sessions are core to

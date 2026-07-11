@@ -88,6 +88,7 @@ set your terminal font to **JetBrainsMono Nerd Font** (Terminal/iTerm2 prefs, or
 ```bash
 ./install.sh --minimal   # zsh + plugins + prompt only (skip extras, lazygit, nvim, font)
 ./install.sh --server    # headless box: skip the Nerd Font (it lives on your client)
+./install.sh --offline   # air-gapped: no internet fetches (packages from your mirror)
 ./install.sh --no-nvim   # don't install Neovim/LazyVim or touch ~/.config/nvim
 ./install.sh --no-font   # skip the Nerd Font download
 ./install.sh --no-chsh   # don't change the default login shell

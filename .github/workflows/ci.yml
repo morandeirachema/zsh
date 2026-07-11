@@ -39,19 +39,26 @@ jobs:
           - name: ubuntu
             image: ubuntu:24.04
             prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
+            args: --minimal --no-chsh -y
           - name: fedora
             image: fedora:latest
             prep: dnf install -y sudo git curl zsh
+            args: --minimal --no-chsh -y
           - name: arch
             image: archlinux:latest
             prep: pacman -Sy --noconfirm sudo git curl zsh
+            args: --minimal --no-chsh -y
+          - name: ubuntu-offline
+            image: ubuntu:24.04
+            prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
+            args: --offline --minimal --no-chsh -y
     steps:
       - uses: actions/checkout@v4
       - name: Smoke test on ${{ matrix.name }}
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
             ${{ matrix.prep }}
-            ./install.sh --minimal --no-chsh -y
+            ./install.sh ${{ matrix.args }}
             test -L "$HOME/.zshrc"                    && echo "✓ ~/.zshrc symlinked"
             test -L "$HOME/.config/starship.toml"     && echo "✓ starship.toml symlinked"
             zsh -ic "exit 0"                          && echo "✓ interactive zsh loads"
