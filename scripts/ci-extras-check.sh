@@ -43,6 +43,10 @@ fi
 # --- interactive zsh loads cleanly with all the new bits ---
 zsh -ic 'exit 0' >/dev/null 2>&1 && ok "interactive zsh loads" || bad "interactive zsh failed to load"
 
+# --- alacritty: config symlinked (hard); binary is a soft check (GUI pkg) ---
+[ -L "$HOME/.config/alacritty/alacritty.toml" ] && ok "alacritty.toml symlinked" || bad "alacritty.toml not symlinked"
+command -v alacritty >/dev/null && ok "alacritty installed" || note "alacritty binary not installed (package missing?) — non-fatal"
+
 # --- fabric: hard-verify IF present; warn (don't fail) if the fetch was missed ---
 if command -v fabric >/dev/null; then
   if fabric --version </dev/null >/dev/null 2>&1; then

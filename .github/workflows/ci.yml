@@ -20,8 +20,10 @@ jobs:
         run: |
           zsh -n zsh/.zshrc
           zsh -n zsh/aliases.zsh
-      - name: Validate starship.toml
-        run: python3 -c "import tomllib; tomllib.load(open('starship/starship.toml','rb'))"
+      - name: Validate TOML (starship + alacritty)
+        run: |
+          python3 -c "import tomllib; tomllib.load(open('starship/starship.toml','rb'))"
+          python3 -c "import tomllib; tomllib.load(open('alacritty/alacritty.toml','rb'))"
       - name: Validate git-delta fragment
         run: git config -f git/delta.gitconfig --list
       - name: Lua parse (nvim config)

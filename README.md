@@ -80,6 +80,7 @@ changed; the Nerd Font is installed via `brew --cask`.
 | `--xdg` | put `.zshrc` under `ZDOTDIR=~/.config/zsh` to keep `$HOME` tidy |
 | `--no-nvim` | don't install Neovim/LazyVim or touch `~/.config/nvim` |
 | `--no-fabric` | don't install [fabric](https://github.com/danielmiessler/fabric) (the AI-patterns CLI) |
+| `--no-alacritty` | don't install [Alacritty](https://alacritty.org) or link its config |
 | `--no-font` | skip the Nerd Font download |
 | `--no-chsh` | don't change the default login shell |
 | `-y`, `--yes` | non-interactive |
@@ -87,8 +88,9 @@ changed; the Nerd Font is installed via `brew --cask`.
 </details>
 
 > [!TIP]
-> After installing, set your terminal font to **JetBrainsMono Nerd Font** so the
-> prompt icons render (e.g. kitty: `font_family JetBrainsMono Nerd Font`).
+> Using the bundled **Alacritty** config? The font is already set — nothing to do.
+> On any other terminal, set its font to **JetBrainsMono Nerd Font** so the prompt
+> icons render (e.g. kitty: `font_family JetBrainsMono Nerd Font`).
 
 ---
 
@@ -111,6 +113,7 @@ changed; the Nerd Font is installed via `brew --cask`.
 | 🪟 | [tmux](https://github.com/tmux/tmux) | persistent SSH sessions, survive reboots — plus a [sessionizer](#-tmux) (`prefix f`) |
 | 🔑 | [pass](https://www.passwordstore.org) | GPG-encrypted password store (bring your own key) |
 | 🤖 | [fabric](https://github.com/danielmiessler/fabric) | run AI "patterns" as Unix filters (`--no-fabric` to skip) |
+| 🖥️ | [Alacritty](https://alacritty.org) | GPU terminal, Catppuccin + Nerd Font preset ([`alacritty/`](alacritty/); `--no-alacritty` to skip) |
 
 ---
 
@@ -315,6 +318,21 @@ Catppuccin status bar matching the prompt (prefix stays `Ctrl-b`).
 
 ---
 
+## 🖥️ Terminal (Alacritty)
+
+[`alacritty/alacritty.toml`](alacritty/alacritty.toml) — a GPU-accelerated terminal
+preset in **Catppuccin Mocha** with **JetBrainsMono Nerd Font** baked in, so the
+whole stack (terminal → prompt → tmux → nvim) is one theme and glyphs render with
+no manual font step. It's intentionally minimal — **tmux** provides tabs, splits,
+and sessions.
+
+Installed and linked by default on desktops; skipped on servers (`--server`) and
+with `--no-alacritty`. Prefer a different terminal? Keep using it — just point its
+font at *JetBrainsMono Nerd Font* and, optionally, drop in the Catppuccin Mocha
+palette from the toml. Nothing else in the repo depends on Alacritty.
+
+---
+
 ## ⚙️ Configuration
 
 - **Per-machine settings** (secrets, local `PATH`, work aliases) → `~/.zshrc.local`,
@@ -408,6 +426,7 @@ doesn't uninstall packages.
 ├── nvim/                   # LazyVim config        ->  ~/.config/nvim
 ├── lazygit/config.yml      # lazygit (delta)       ->  ~/.config/lazygit/config.yml
 ├── tmux/tmux.conf          # tmux config           ->  ~/.config/tmux/tmux.conf
+├── alacritty/alacritty.toml # terminal preset      ->  ~/.config/alacritty/alacritty.toml
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
 │   ├── tmux-sessionizer.sh # fzf project switcher  ->  ~/.local/bin/tmux-sessionizer

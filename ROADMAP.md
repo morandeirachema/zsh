@@ -70,11 +70,14 @@ Ideas taken from three Mischa van den Burg videos (see
   fzf-tab, `Ctrl-/` toggles the preview. Uses colon preview-window syntax so it
   never errors on old fzf (< 0.28), verified against fzf 0.24 / 0.29 / 0.67.
 - **CI now covers the extras path** — a non-minimal `extras` job installs
-  pass/fabric/tmux-sessionizer on Ubuntu/Fedora/Arch and asserts them via
-  `scripts/ci-extras-check.sh` (fabric is a soft check — network dependent).
+  pass/fabric/tmux-sessionizer/alacritty on Ubuntu/Fedora/Arch and asserts them via
+  `scripts/ci-extras-check.sh` (fabric + alacritty binaries are soft checks).
+- **Alacritty** (P2) — `alacritty/alacritty.toml`, Catppuccin Mocha + JetBrainsMono
+  Nerd Font, symlinked; installed by default on desktops, skipped by
+  `--server`/`--no-alacritty`. Removes the manual "set your terminal font" step.
 
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - `install.sh --dry-run` and a `doctor`/`checkhealth` subcommand for the shell.
-- Video-ideas P2: SSH port-forward helpers · optional Alacritty config · Synology
-  NAS sync pattern (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)).
+- Video-ideas P2 remaining: SSH port-forward helpers · Synology NAS sync pattern
+  (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)). Alacritty is done.

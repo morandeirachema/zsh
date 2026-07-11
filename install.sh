@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--minimal] [--server] [--offline] [--no-nvim] [--no-fabric] [--no-font] [--no-chsh] [-y]
-#    --minimal   only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
-#    --server    headless box: skip the Nerd Font (it lives on your client, not the server)
-#    --offline   air-gapped: no internet fetches — packages must come from your mirror,
-#                and skip the curl-installer fallbacks, release binaries, and font download
-#    --xdg       XDG layout: put .zshrc under ZDOTDIR=~/.config/zsh (keeps $HOME tidy)
-#    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
-#    --no-fabric don't install fabric (the AI-patterns CLI)
-#    --no-font   don't download the Nerd Font
-#    --no-chsh   don't change the default login shell
-#    -y|--yes    non-interactive
+#  Usage: ./install.sh [--minimal] [--server] [--offline] [--no-nvim] [--no-fabric] [--no-alacritty] [--no-font] [--no-chsh] [-y]
+#    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
+#    --server       headless box: skip the Nerd Font + Alacritty (both live on your client)
+#    --offline      air-gapped: no internet fetches — packages must come from your mirror,
+#                   and skip the curl-installer fallbacks, release binaries, and font download
+#    --xdg          XDG layout: put .zshrc under ZDOTDIR=~/.config/zsh (keeps $HOME tidy)
+#    --no-nvim      don't install Neovim/LazyVim or touch ~/.config/nvim
+#    --no-fabric    don't install fabric (the AI-patterns CLI)
+#    --no-alacritty don't install the Alacritty terminal or link its config
+#    --no-font      don't download the Nerd Font
+#    --no-chsh      don't change the default login shell
+#    -y|--yes       non-interactive
 # ============================================================
 set -euo pipefail
 
@@ -20,20 +21,21 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 mkdir -p "$LOGDIR" 2>/dev/null || true
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; OFFLINE=0; XDG=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; OFFLINE=0; XDG=0
 
 for a in "$@"; do
   case "$a" in
-    --no-font)   NO_FONT=1;;
-    --server)    NO_FONT=1;;
-    --offline)   OFFLINE=1; NO_FONT=1;;
-    --xdg)       XDG=1;;
-    --no-chsh)   NO_CHSH=1;;
-    --no-nvim)   NO_NVIM=1;;
-    --no-fabric) NO_FABRIC=1;;
-    --minimal)   MINIMAL=1; NO_FONT=1;;
-    -y|--yes)    : ;;
-    -h|--help)   grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    --no-font)      NO_FONT=1;;
+    --server)       NO_FONT=1; NO_ALACRITTY=1;;
+    --offline)      OFFLINE=1; NO_FONT=1;;
+    --xdg)          XDG=1;;
+    --no-chsh)      NO_CHSH=1;;
+    --no-nvim)      NO_NVIM=1;;
+    --no-fabric)    NO_FABRIC=1;;
+    --no-alacritty) NO_ALACRITTY=1;;
+    --minimal)      MINIMAL=1; NO_FONT=1;;
+    -y|--yes)       : ;;
+    -h|--help)      grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
     *) echo "unknown option: $a"; exit 1;;
   esac
 done
@@ -294,6 +296,15 @@ if [ "$MINIMAL" -eq 0 ]; then
     else install_fabric_release || warn "fabric failed — see https://github.com/danielmiessler/fabric/releases"
     fi
   fi
+  # alacritty — GPU-accelerated terminal (client-side; skipped by --server/--no-alacritty)
+  if [ "$NO_ALACRITTY" -eq 0 ] && ! have alacritty; then
+    info "Installing alacritty…"
+    if [ "$PM" = brew ]; then
+      brew install --cask alacritty || warn "alacritty cask failed — see https://alacritty.org"
+    else
+      pkg_install alacritty || warn "alacritty not packaged here — see https://alacritty.org"
+    fi
+  fi
 fi
 
 # --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
@@ -408,6 +419,9 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 # tmux-sessionizer helper on PATH (bound to prefix+f in tmux.conf)
 [ "$MINIMAL" -eq 0 ] && { mkdir -p "$HOME/.local/bin"; \
   link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
+# alacritty config (client-side terminal; skipped by --minimal/--server/--no-alacritty)
+[ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
+  link "$REPO_DIR/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
 
 # Neovim / LazyVim config (whole dir; lazy-lock.json lands in the repo for version pinning)
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
