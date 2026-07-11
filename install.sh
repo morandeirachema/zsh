@@ -6,6 +6,7 @@
 #    --server    headless box: skip the Nerd Font (it lives on your client, not the server)
 #    --offline   air-gapped: no internet fetches — packages must come from your mirror,
 #                and skip the curl-installer fallbacks, release binaries, and font download
+#    --xdg       XDG layout: put .zshrc under ZDOTDIR=~/.config/zsh (keeps $HOME tidy)
 #    --no-nvim   don't install Neovim/LazyVim or touch ~/.config/nvim
 #    --no-font   don't download the Nerd Font
 #    --no-chsh   don't change the default login shell
@@ -15,13 +16,14 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; OFFLINE=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; OFFLINE=0; XDG=0
 
 for a in "$@"; do
   case "$a" in
     --no-font) NO_FONT=1;;
     --server)  NO_FONT=1;;
     --offline) OFFLINE=1; NO_FONT=1;;
+    --xdg)     XDG=1;;
     --no-chsh) NO_CHSH=1;;
     --no-nvim) NO_NVIM=1;;
     --minimal) MINIMAL=1; NO_FONT=1;;
@@ -288,7 +290,16 @@ link() {
 }
 
 info "Linking config…"
-link "$REPO_DIR/zsh/.zshrc"              "$HOME/.zshrc"
+if [ "$XDG" -eq 1 ]; then
+  ZDOTDIR_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
+  mkdir -p "$ZDOTDIR_PATH"
+  # ~/.zshenv points zsh at the XDG location; append only if not already set.
+  grep -qs 'ZDOTDIR=' "$HOME/.zshenv" 2>/dev/null \
+    || printf '\nexport ZDOTDIR="%s"\n' "$ZDOTDIR_PATH" >> "$HOME/.zshenv"
+  link "$REPO_DIR/zsh/.zshrc"            "$ZDOTDIR_PATH/.zshrc"
+else
+  link "$REPO_DIR/zsh/.zshrc"            "$HOME/.zshrc"
+fi
 link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 
 # lazygit config (symlink the file only, so lazygit's own state.yml stays local)

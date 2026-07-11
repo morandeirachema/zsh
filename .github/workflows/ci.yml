@@ -12,8 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install zsh + shellcheck
         run: sudo apt-get update && sudo apt-get install -y zsh shellcheck
-      - name: shellcheck (install.sh)
-        run: shellcheck --severity=warning --shell=bash install.sh
+      - name: shellcheck (shell scripts)
+        run: shellcheck --severity=warning --shell=bash install.sh scripts/*.sh
       - name: bash -n (install.sh)
         run: bash -n install.sh
       - name: zsh -n (zsh configs)

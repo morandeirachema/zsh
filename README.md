@@ -92,6 +92,7 @@ set your terminal font to **JetBrainsMono Nerd Font** (Terminal/iTerm2 prefs, or
 ./install.sh --minimal   # zsh + plugins + prompt only (skip extras, lazygit, nvim, font)
 ./install.sh --server    # headless box: skip the Nerd Font (it lives on your client)
 ./install.sh --offline   # air-gapped: no internet fetches (packages from your mirror)
+./install.sh --xdg       # put .zshrc under ~/.config/zsh (ZDOTDIR); keep $HOME tidy
 ./install.sh --no-nvim   # don't install Neovim/LazyVim or touch ~/.config/nvim
 ./install.sh --no-font   # skip the Nerd Font download
 ./install.sh --no-chsh   # don't change the default login shell
@@ -196,6 +197,8 @@ Start from [`zsh/zshrc.local.example`](zsh/zshrc.local.example). See
 │   └── tmux.conf           # tmux config     ->  ~/.config/tmux/tmux.conf
 ├── git/
 │   └── delta.gitconfig     # git-delta settings, included into ~/.gitconfig
+├── scripts/
+│   └── vendor-plugins.sh   # pre-seed zinit + plugins for air-gapped/offline hosts
 ├── CLAUDE.md               # notes for AI assistants working in this repo
 ├── ROADMAP.md              # production-hardening plan
 └── README.md

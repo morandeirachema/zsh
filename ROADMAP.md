@@ -32,24 +32,21 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   is set for signing; `zsh/zshrc.local.example` is a starter template; ssh-agent
   is left to the platform with an opt-in snippet.
 
-## P1 — do next
-- **Deeper pinning.** Record a plugin lockfile (zinit `ice ver`/`snippet`) and
-  pin tool versions per-distro for fully reproducible rebuilds. Verify the
-  starship/zoxide fallback installers too (or drop them on hardened hosts).
-- **Air-gapped: vendor the plugins.** `--offline` skips fetches, but a fully
-  locked-down host still needs zinit + plugins pre-seeded into
-  `~/.local/share/zinit`; document/script that bundle.
-
 ## ✅ Done (P2 batch)
 - **tmux config** (`tmux/tmux.conf`, symlinked) — mouse, vi copy, cwd-preserving
   splits, Catppuccin status bar matching the prompt.
 - **`jq` / `yq`**, **direnv** (hooked in `.zshrc`), **carapace** (guarded
   completion hook) — added to the installer's extras.
+- **Air-gapped plugin vendoring** — `scripts/vendor-plugins.sh` pre-seeds zinit +
+  all plugins so `--offline` needs zero network on first launch.
+- **XDG layout** — opt-in `--xdg` puts `.zshrc` under `ZDOTDIR=~/.config/zsh`.
+- **Gate-able prompt** — `kubernetes`/`aws` segments ship with commented
+  `detect_*` filters to scope them to infra dirs.
 
-## P2 — nice
-- **XDG layout** — opt-in `--xdg` (`ZDOTDIR=~/.config/zsh`) so `$HOME` stays clean.
-- **Make kube/aws prompt segments gate-able** — a documented `detect_files`
-  option for people who don't want them always on.
+## P1 — last mile
+- **Deeper pinning.** A full plugin lockfile (exact commit per plugin) and
+  per-distro tool-version pins for byte-reproducible rebuilds. `ZINIT_PIN` +
+  `scripts/vendor-plugins.sh` cover the common cases; this is what's left.
 
 ## P3 — later
 - **Audit log** of what `install.sh` changed (packages, symlinks, gitconfig) to a

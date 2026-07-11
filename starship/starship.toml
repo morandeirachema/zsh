@@ -150,6 +150,11 @@ only_with_files = true
 #     Only render when a context is actually set. ---
 [kubernetes]
 disabled = false
+# Always shown by default (safety). To show it only inside infra/k8s dirs,
+# uncomment any of these detect_* filters:
+# detect_files = ['Chart.yaml', 'skaffold.yaml', 'kustomization.yaml']
+# detect_folders = ['helm', 'k8s', 'manifests']
+# detect_extensions = ['tf']
 symbol = "☸ "
 style = "fg:crust bg:k8s"
 format = "[](fg:k8s)[ $symbol$context(:$namespace) ]($style)[](fg:k8s) "
