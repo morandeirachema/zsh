@@ -46,11 +46,15 @@ if command -v fzf >/dev/null; then
   if   (( ${+commands[bat]} ));    then _fzcat='bat --color=always --style=numbers --line-range=:200 {}'
   elif (( ${+commands[batcat]} )); then _fzcat='batcat --color=always --style=numbers --line-range=:200 {}'
   else _fzcat='cat {}'; fi
-  if (( ${+commands[eza]} )); then _fztree='eza --tree --level=2 --color=always --icons=auto {}'
+  # no --icons in the preview tree → works on any eza version (icons need >=0.18)
+  if (( ${+commands[eza]} )); then _fztree='eza --tree --level=2 --color=always {}'
   else _fztree='ls -1 {}'; fi
-  export FZF_CTRL_T_OPTS="--preview '[ -d {} ] && $_fztree || $_fzcat' --preview-window=right,60%,border-left --bind ctrl-/:toggle-preview"
-  export FZF_ALT_C_OPTS="--preview '$_fztree' --preview-window=right,50%,border-left --bind ctrl-/:toggle-preview"
-  export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=down,3,wrap --bind ctrl-/:toggle-preview"
+  # NB: colon preview-window syntax (right:60%) — the comma form + `border-left`
+  # need fzf >= 0.28 and error out on older builds (e.g. RHEL/EPEL). Colon works
+  # on fzf 0.17 → current, so previews never break the picker on an old box.
+  export FZF_CTRL_T_OPTS="--preview '[ -d {} ] && $_fztree || $_fzcat' --preview-window=right:60% --bind ctrl-/:toggle-preview"
+  export FZF_ALT_C_OPTS="--preview '$_fztree' --preview-window=right:50% --bind ctrl-/:toggle-preview"
+  export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=down:3:wrap --bind ctrl-/:toggle-preview"
   unset _fzcat _fztree
 fi
 

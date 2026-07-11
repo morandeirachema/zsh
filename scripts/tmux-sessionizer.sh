@@ -26,8 +26,10 @@ else
   for d in "$HOME/code" "$HOME/projects" "$HOME/src" "$HOME/work" "$HOME/dev"; do
     [ -d "$d" ] && roots+=("$d")
   done
-  [ ${#roots[@]} -eq 0 ] && roots=("$HOME")
 fi
+# Guarantee at least one root so "${roots[@]}" is safe under `set -u` even on
+# bash 3.2 (macOS) — covers "no project dirs" and a whitespace-only override.
+[ ${#roots[@]} -eq 0 ] && roots=("$HOME")
 
 # --- pick a directory (explicit arg wins, else fuzzy-find one level deep) ---
 if [ "$#" -eq 1 ]; then
