@@ -40,13 +40,14 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   locked-down host still needs zinit + plugins pre-seeded into
   `~/.local/share/zinit`; document/script that bundle.
 
+## ✅ Done (P2 batch)
+- **tmux config** (`tmux/tmux.conf`, symlinked) — mouse, vi copy, cwd-preserving
+  splits, Catppuccin status bar matching the prompt.
+- **`jq` / `yq`**, **direnv** (hooked in `.zshrc`), **carapace** (guarded
+  completion hook) — added to the installer's extras.
+
 ## P2 — nice
-- **tmux config** (`tmux/tmux.conf`, symlinked) — persistent sessions are core to
-  sysadmin work over SSH; add sane defaults + a status line matching the prompt.
-- **`jq` / `yq`** — near-essential for ops (JSON/YAML wrangling). Add to installer.
-- **direnv** — per-project env/secret loading with an allowlist.
-- **carapace** — unified completions for kubectl/aws/docker/terraform/gh, etc.
-- **XDG layout** — move to `ZDOTDIR=~/.config/zsh` so `$HOME` stays clean.
+- **XDG layout** — opt-in `--xdg` (`ZDOTDIR=~/.config/zsh`) so `$HOME` stays clean.
 - **Make kube/aws prompt segments gate-able** — a documented `detect_files`
   option for people who don't want them always on.
 

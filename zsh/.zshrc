@@ -135,6 +135,21 @@ command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
 command -v starship >/dev/null && eval "$(starship init zsh)"
 
 # ------------------------------------------------------------
+#  direnv — per-directory env from .envrc (allowlisted with `direnv allow`)
+#  https://direnv.net
+# ------------------------------------------------------------
+command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+
+# ------------------------------------------------------------
+#  carapace — unified completions (kubectl/aws/docker/terraform/gh…). Optional.
+#  https://carapace.sh
+# ------------------------------------------------------------
+if command -v carapace >/dev/null; then
+  export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense'
+  source <(carapace _carapace zsh) 2>/dev/null
+fi
+
+# ------------------------------------------------------------
 #  Aliases + per-machine overrides
 # ------------------------------------------------------------
 [[ -f "$ZDOTREPO/aliases.zsh" ]] && source "$ZDOTREPO/aliases.zsh"

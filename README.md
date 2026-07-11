@@ -15,6 +15,9 @@ one command.
 - [tealdeer](https://github.com/tealdeer-rs/tealdeer) (`tldr`) — quick, offline command examples
 - [lazygit](https://github.com/jesseduffield/lazygit) — full-screen terminal UI for git (alias `lg`; diffs rendered with delta)
 - [Neovim](https://neovim.io) + [LazyVim](https://www.lazyvim.org) — editor with a batteries-included config, vendored in [`nvim/`](nvim/)
+- [jq](https://github.com/jqlang/jq) + [yq](https://github.com/mikefarah/yq) — JSON / YAML processing
+- [direnv](https://direnv.net) + [carapace](https://carapace.sh) — per-directory env + unified completions (kubectl/aws/docker/…)
+- [tmux](https://github.com/tmux/tmux) — persistent SSH sessions ([`tmux/tmux.conf`](tmux/tmux.conf), Catppuccin status bar)
 
 **Built for servers too.** The prompt shows **`user@host` over SSH** (root in red) and your
 **Kubernetes context** and **AWS profile/region** when set — so you never act on the wrong box,
@@ -189,6 +192,8 @@ Start from [`zsh/zshrc.local.example`](zsh/zshrc.local.example). See
 │   └── lua/{config,plugins}/…
 ├── lazygit/
 │   └── config.yml          # lazygit config  ->  ~/.config/lazygit/config.yml
+├── tmux/
+│   └── tmux.conf           # tmux config     ->  ~/.config/tmux/tmux.conf
 ├── git/
 │   └── delta.gitconfig     # git-delta settings, included into ~/.gitconfig
 ├── CLAUDE.md               # notes for AI assistants working in this repo

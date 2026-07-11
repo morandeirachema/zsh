@@ -184,6 +184,15 @@ if [ "$MINIMAL" -eq 0 ]; then
     else install_lazygit_release || warn "lazygit failed — see https://github.com/jesseduffield/lazygit/releases"
     fi
   fi
+  # jq / yq — JSON & YAML processing (ops staples)
+  have jq || { info "Installing jq…"; pkg_install jq || warn "jq failed"; }
+  have yq || { info "Installing yq…"; pkg_install yq || warn "yq not packaged — see https://github.com/mikefarah/yq"; }
+  # direnv — per-directory env (.envrc, with allowlist)
+  have direnv || { info "Installing direnv…"; pkg_install direnv || warn "direnv failed — see https://direnv.net"; }
+  # carapace — unified completions for kubectl/aws/docker/terraform/gh, etc.
+  have carapace || { info "Installing carapace…"; pkg_install carapace || warn "carapace not packaged — see https://carapace.sh (brew/AUR/releases)"; }
+  # tmux — persistent terminal sessions (essential over SSH)
+  have tmux || { info "Installing tmux…"; pkg_install tmux || warn "tmux failed"; }
 fi
 
 # --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
@@ -284,6 +293,8 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 
 # lazygit config (symlink the file only, so lazygit's own state.yml stays local)
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
+# tmux config
+[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 
 # Neovim / LazyVim config (whole dir; lazy-lock.json lands in the repo for version pinning)
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
