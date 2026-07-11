@@ -183,6 +183,7 @@ Start from [`zsh/zshrc.local.example`](zsh/zshrc.local.example). See
 ```
 .
 ├── install.sh              # idempotent bootstrap
+├── uninstall.sh            # reverse the symlinks + git-delta include
 ├── zsh/
 │   ├── .zshrc              # main config  ->  ~/.zshrc
 │   └── aliases.zsh         # aliases (sourced by .zshrc)
@@ -206,7 +207,10 @@ Start from [`zsh/zshrc.local.example`](zsh/zshrc.local.example). See
 
 ## Uninstall / revert
 ```bash
-rm ~/.zshrc ~/.config/starship.toml ~/.config/nvim ~/.config/lazygit/config.yml
-mv ~/.zshrc.pre-console.<timestamp> ~/.zshrc   # restore your previous one
+./uninstall.sh                                 # remove the symlinks + git-delta include
+mv ~/.zshrc.pre-console.<timestamp> ~/.zshrc   # optional: restore your previous zshrc
 exec zsh
 ```
+`uninstall.sh` only removes symlinks that point into this repo (real files are left
+alone) and doesn't uninstall packages. Every install writes an audit log to
+`~/.local/state/console/install-<timestamp>.log`.

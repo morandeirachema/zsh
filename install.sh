@@ -16,6 +16,9 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
+LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
+mkdir -p "$LOGDIR" 2>/dev/null || true
+LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
 NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; OFFLINE=0; XDG=0
 
 for a in "$@"; do
@@ -34,9 +37,10 @@ for a in "$@"; do
 done
 
 c()    { printf '\033[%sm' "$1"; }
-info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; }
-ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; }
-warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; }
+log()  { printf '%s %s\n' "$STAMP" "$*" >> "$LOGFILE" 2>/dev/null || true; }
+info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; log ">  $*"; }
+ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; log "OK $*"; }
+warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; log "!! $*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 sha256_of() { if have sha256sum; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
 
@@ -342,6 +346,7 @@ ok   "Done!  Start your new shell with:  exec zsh"
 info "First zsh launch auto-installs zinit + plugins (one-time, ~10s)."
 [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ] && \
   info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."
+info "Audit log: $LOGFILE"
 
 # Failures above are non-fatal (they only `warn`); exit success so callers/CI
 # don't trip over a trailing conditional's exit status.

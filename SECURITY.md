@@ -43,6 +43,15 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
 - **ssh-agent is left to your platform** (gnome-keyring, systemd, 1Password,
   Vault, etc.) to avoid spawning a conflicting one. To auto-start a plain agent
   when none is present, opt in via `~/.zshrc.local` — see the example file.
+- **External agents (1Password / HashiCorp Vault / gpg-agent):** point
+  `SSH_AUTH_SOCK` at the agent's socket from `~/.zshrc.local` — e.g. 1Password
+  `export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"`. This keeps private keys in
+  the vault/HSM (never on disk) — the PAM-friendly setup.
+
+## Undo
+`./uninstall.sh` removes only the symlinks that point into this repo and the
+git-delta include; it never deletes real files or packages. `install.sh` writes an
+audit trail of everything it changed to `~/.local/state/console/install-<ts>.log`.
 
 ## Reporting
 This repo has no formal disclosure process; open an issue on

@@ -13,7 +13,7 @@ jobs:
       - name: Install zsh + shellcheck
         run: sudo apt-get update && sudo apt-get install -y zsh shellcheck
       - name: shellcheck (shell scripts)
-        run: shellcheck --severity=warning --shell=bash install.sh scripts/*.sh
+        run: shellcheck --severity=warning --shell=bash install.sh uninstall.sh scripts/*.sh
       - name: bash -n (install.sh)
         run: bash -n install.sh
       - name: zsh -n (zsh configs)

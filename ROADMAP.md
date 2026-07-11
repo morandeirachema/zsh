@@ -48,10 +48,16 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   per-distro tool-version pins for byte-reproducible rebuilds. `ZINIT_PIN` +
   `scripts/vendor-plugins.sh` cover the common cases; this is what's left.
 
-## P3 — later
-- **Audit log** of what `install.sh` changed (packages, symlinks, gitconfig) to a
-  timestamped file for change-management/review.
-- **Uninstall script** that reverses symlinks + the gitconfig include cleanly.
-- **1Password / Vault SSH-agent** integration notes for PAM workflows.
-- **Per-host profiles** (`~/.zshrc.local` is the hook) — e.g. prod vs staging
-  prompt accent color to reinforce "which environment".
+## ✅ Done (P3 batch)
+- **Audit log** — `install.sh` records every step to
+  `~/.local/state/console/install-<ts>.log` for change-management/review.
+- **`uninstall.sh`** — reverses only the symlinks that point into this repo and
+  the git-delta include; never touches real files or packages.
+- **1Password / Vault SSH-agent** — documented in `SECURITY.md` (point
+  `SSH_AUTH_SOCK` at the external agent; keys stay in the vault/HSM).
+- **Per-host profiles** — `~/.zshrc.local` hook + `zshrc.local.example` show a
+  prod-vs-staging prompt-accent pattern.
+
+## Future ideas
+- Full byte-reproducible plugin lockfile (see *P1 — last mile*).
+- `install.sh --dry-run` and a `doctor`/`checkhealth` subcommand for the shell.
