@@ -75,6 +75,35 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
   rm -rf "$tmp"
 }
 
+install_carapace_release() {  # https://github.com/carapace-sh/carapace-bin
+  local arch tmp ver want got
+  case "$(uname -m)" in
+    x86_64)  arch="amd64" ;;
+    aarch64) arch="arm64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  ver="$(curl -sSL https://api.github.com/repos/carapace-sh/carapace-bin/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  curl -sSfL -o "$tmp/cb.tgz" \
+    "https://github.com/carapace-sh/carapace-bin/releases/download/v${ver}/carapace-bin_${ver}_linux_${arch}.tar.gz" \
+    || { rm -rf "$tmp"; return 1; }
+  if curl -sSfL -o "$tmp/sums" \
+       "https://github.com/carapace-sh/carapace-bin/releases/download/v${ver}/carapace-bin_${ver}_checksums.txt"; then
+    want="$(grep -F "carapace-bin_${ver}_linux_${arch}.tar.gz" "$tmp/sums" | awk '{print $1}' | head -1)"
+    got="$(sha256_of "$tmp/cb.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "carapace checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch carapace checksums — installing unverified"
+  fi
+  tar xzf "$tmp/cb.tgz" -C "$tmp" carapace || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$tmp/carapace" "$HOME/.local/bin/carapace"
+  rm -rf "$tmp"
+}
+
 install_neovim_release() {    # https://github.com/neovim/neovim/releases
   local asset tmp want got
   case "$(uname -m)" in
@@ -196,7 +225,13 @@ if [ "$MINIMAL" -eq 0 ]; then
   # direnv — per-directory env (.envrc, with allowlist)
   have direnv || { info "Installing direnv…"; pkg_install direnv || warn "direnv failed — see https://direnv.net"; }
   # carapace — unified completions for kubectl/aws/docker/terraform/gh, etc.
-  have carapace || { info "Installing carapace…"; pkg_install carapace || warn "carapace not packaged — see https://carapace.sh (brew/AUR/releases)"; }
+  if ! have carapace; then
+    info "Installing carapace…"
+    if pkg_install carapace; then :
+    elif [ "$OFFLINE" -eq 1 ]; then warn "offline: install carapace from your mirror"
+    else install_carapace_release || warn "carapace failed — see https://carapace.sh"
+    fi
+  fi
   # tmux — persistent terminal sessions (essential over SSH)
   have tmux || { info "Installing tmux…"; pkg_install tmux || warn "tmux failed"; }
   # tmux plugins: tpm + resurrect + continuum (session persistence across reboots)
