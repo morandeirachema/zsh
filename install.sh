@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--minimal] [--server] [--offline] [--no-nvim] [--no-fabric] [--no-alacritty] [--no-font] [--no-chsh] [-y]
+#  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--no-nvim] [--no-fabric] [--no-alacritty] [--no-font] [--no-chsh] [-y]
+#    --dry-run      show every package/symlink/change this run WOULD make — touch nothing
+#    --doctor       health check: report installed tools, symlinks, font, git config — then exit
 #    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
 #    --server       headless box: skip the Nerd Font + Alacritty (both live on your client)
 #    --offline      air-gapped: no internet fetches — packages must come from your mirror,
@@ -19,12 +21,13 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
-mkdir -p "$LOGDIR" 2>/dev/null || true
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; OFFLINE=0; XDG=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
 
 for a in "$@"; do
   case "$a" in
+    --dry-run)      DRY=1;;
+    --doctor)       DOCTOR=1;;
     --no-font)      NO_FONT=1;;
     --server)       NO_FONT=1; NO_ALACRITTY=1;;
     --offline)      OFFLINE=1; NO_FONT=1;;
@@ -39,13 +42,18 @@ for a in "$@"; do
     *) echo "unknown option: $a"; exit 1;;
   esac
 done
+# Create the audit-log dir only for a real run (dry-run / doctor change nothing).
+[ "$DRY" -eq 1 ] || [ "$DOCTOR" -eq 1 ] || mkdir -p "$LOGDIR" 2>/dev/null || true
 
 c()    { printf '\033[%sm' "$1"; }
-log()  { printf '%s %s\n' "$STAMP" "$*" >> "$LOGFILE" 2>/dev/null || true; }
+log()  { [ "$DRY" -eq 1 ] && return 0; printf '%s %s\n' "$STAMP" "$*" >> "$LOGFILE" 2>/dev/null || true; }
 info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; log ">  $*"; }
 ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; log "OK $*"; }
 warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; log "!! $*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
+dry()  { [ "$DRY" -eq 1 ]; }                     # true in --dry-run
+# run a mutating command, or (in dry-run) just print what it would do
+run()  { if dry; then info "[dry-run] $*"; else "$@"; fi; }
 sha256_of() { if have sha256sum; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
 # GitHub API calls, authenticated when a token is present (GITHUB_TOKEN/GH_TOKEN)
 # → lifts the 60-req/hour unauthenticated rate limit that bites on shared IPs / CI.
@@ -60,6 +68,7 @@ gh_curl() {
 # --- release-binary fallbacks (used when a tool isn't in the repos) ---
 install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
   local arch tmp ver want got
+  dry && { info "[dry-run] download + install lazygit (GitHub release)"; return 0; }
   case "$(uname -m)" in
     x86_64)  arch="Linux_x86_64" ;;
     aarch64) arch="Linux_arm64" ;;
@@ -90,6 +99,7 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
 
 install_carapace_release() {  # https://github.com/carapace-sh/carapace-bin
   local arch tmp ver want got
+  dry && { info "[dry-run] download + install carapace (GitHub release)"; return 0; }
   case "$(uname -m)" in
     x86_64)  arch="amd64" ;;
     aarch64) arch="arm64" ;;
@@ -129,6 +139,7 @@ install_fabric_release() {    # https://github.com/danielmiessler/fabric
     aarch64|arm64) arch="arm64" ;;
     *) return 1 ;;
   esac
+  dry && { info "[dry-run] download + install fabric (GitHub release)"; return 0; }
   asset="fabric_${os}_${arch}.tar.gz"
   tmp="$(mktemp -d)"
   ver="$(gh_curl https://api.github.com/repos/danielmiessler/fabric/releases/latest \
@@ -155,6 +166,7 @@ install_fabric_release() {    # https://github.com/danielmiessler/fabric
 
 install_neovim_release() {    # https://github.com/neovim/neovim/releases
   local asset tmp want got
+  dry && { info "[dry-run] download + install Neovim (GitHub release)"; return 0; }
   case "$(uname -m)" in
     x86_64)  asset="nvim-linux-x86_64" ;;
     aarch64) asset="nvim-linux-arm64" ;;
@@ -205,6 +217,7 @@ SUDO=""
 [ "$PM" != brew ] && [ "$(id -u)" -ne 0 ] && have sudo && SUDO="sudo"
 
 pkg_install() {
+  dry && { info "[dry-run] install package(s): $*"; return 0; }
   # shellcheck disable=SC2086  # $SUDO is intentionally empty (root/brew) → word-split
   case "$PM" in
     brew)   brew install "$@";;
@@ -216,12 +229,86 @@ pkg_install() {
   esac
 }
 
+# --- doctor: report what's installed / linked, then exit (no changes) ---
+doctor() {
+  local cfg="${XDG_CONFIG_HOME:-$HOME/.config}" issues=0
+  local G Y R B Z; G="$(c '1;32')"; Y="$(c '1;33')"; R="$(c '1;31')"; B="$(c '1;36')"; Z="$(c 0)"
+  dg() { printf '  %s✓%s %s\n' "$G" "$Z" "$*"; }
+  dn() { printf '  %s!%s %s\n' "$Y" "$Z" "$*"; issues=$((issues+1)); }
+  dx() { printf '  %s✗%s %s\n' "$R" "$Z" "$*"; issues=$((issues+1)); }
+  dh() { printf '\n%s%s%s\n' "$B" "$*" "$Z"; }
+  short() { printf '%s' "${1/#$HOME/\~}"; }
+  dlink() {   # $1 = path, $2 = repo-relative expected target
+    local dst="$1" want="$REPO_DIR/$2" tgt
+    if [ -L "$dst" ]; then
+      tgt="$(readlink "$dst")"
+      if [ "$tgt" = "$want" ]; then dg "$(short "$dst") → repo"
+      else dn "$(short "$dst") → $tgt (not this repo)"; fi
+    elif [ -e "$dst" ]; then dn "$(short "$dst") is a real file (not linked)"
+    else dn "$(short "$dst") not linked"; fi
+  }
+
+  printf '%sconsole doctor%s  ·  repo: %s  ·  pkg: %s\n' "$B" "$Z" "$REPO_DIR" "${PM:-none}"
+
+  dh "Core"
+  for t in zsh git curl starship; do have "$t" && dg "$t ($(command -v "$t"))" || dx "$t missing"; done
+  if [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git" ]; then dg "zinit cloned"
+  else dn "zinit not cloned yet (installs on first zsh launch)"; fi
+
+  dh "CLI tools"
+  for t in fzf zoxide eza bat batcat fd fdfind rg delta lazygit jq yq direnv carapace tmux pass fabric; do
+    have "$t" && dg "$t" || dn "$t missing"
+  done
+
+  dh "Editor & terminal"
+  if have nvim; then
+    # route nvim's state to a throwaway dir so `doctor` never writes to your $HOME
+    local nst; nst="$(mktemp -d)"
+    dg "nvim ($(XDG_STATE_HOME="$nst" nvim --version 2>/dev/null | sed -n 1p))"
+    rm -rf "$nst"
+  else dn "nvim missing"; fi
+  have alacritty && dg "alacritty" || dn "alacritty missing (expected on servers)"
+
+  dh "Symlinks → repo"
+  if [ -L "$cfg/zsh/.zshrc" ]; then dlink "$cfg/zsh/.zshrc" "zsh/.zshrc"   # --xdg layout
+  else dlink "$HOME/.zshrc" "zsh/.zshrc"; fi
+  dlink "$cfg/starship.toml"                "starship/starship.toml"
+  dlink "$cfg/tmux/tmux.conf"               "tmux/tmux.conf"
+  dlink "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
+  dlink "$cfg/alacritty/alacritty.toml"     "alacritty/alacritty.toml"
+  dlink "$cfg/lazygit/config.yml"           "lazygit/config.yml"
+  dlink "$cfg/nvim"                         "nvim"
+
+  dh "Font & git"
+  if have fc-list; then
+    fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font" \
+      && dg "JetBrainsMono Nerd Font installed" \
+      || dn "JetBrainsMono Nerd Font not found (set your terminal font, or re-run without --no-font)"
+  else dn "fc-list unavailable — can't verify the Nerd Font (normal on macOS)"; fi
+  if git config --global --get-all include.path 2>/dev/null | grep -qxF "$REPO_DIR/git/delta.gitconfig"; then
+    dg "git-delta include active"
+  else dn "git-delta include not set (delta not installed, or install not run)"; fi
+
+  dh "Local overrides"
+  if [ -f "$HOME/.zshrc.local" ]; then
+    [ -O "$HOME/.zshrc.local" ] && dg "found ~/.zshrc.local — owned by you" \
+      || dx "wrong owner on ~/.zshrc.local → .zshrc will refuse to source it"
+  else dn "no ~/.zshrc.local yet (optional; template: zsh/zshrc.local.example)"; fi
+
+  dh "Summary"
+  if [ "$issues" -eq 0 ]; then printf '  %sall good — nothing to fix%s\n' "$G" "$Z"
+  else printf '  %s%d item(s) worth a look%s — run ./install.sh to fix most\n' "$Y" "$issues" "$Z"; fi
+}
+if [ "$DOCTOR" -eq 1 ]; then set +e; doctor; exit 0; fi
+
 info "Repo:            $REPO_DIR"
 info "Package manager: ${PM:-none detected}"
 [ "$OFFLINE" -eq 1 ] && info "Offline mode: no internet fetches (packages assumed from your mirror)."
 
-# shellcheck disable=SC2086  # $SUDO may be empty
-[ "$PM" = apt ] && { $SUDO apt-get update -y || true; }
+if [ "$PM" = apt ]; then
+  # shellcheck disable=SC2086  # $SUDO may be empty
+  if dry; then info "[dry-run] apt-get update"; else $SUDO apt-get update -y || true; fi
+fi
 
 # --- core ---
 info "Installing core packages…"
@@ -259,7 +346,7 @@ if [ "$MINIMAL" -eq 0 ]; then
     info "Installing tealdeer (tldr)…"
     pkg_install tealdeer || warn "tealdeer failed — see https://github.com/tealdeer-rs/tealdeer"
   fi
-  [ "$OFFLINE" -eq 0 ] && have tldr && tldr --update >/dev/null 2>&1 || true
+  if [ "$OFFLINE" -eq 0 ] && ! dry && have tldr; then tldr --update >/dev/null 2>&1 || true; fi
   # lazygit — terminal UI for git
   if ! have lazygit; then
     info "Installing lazygit…"
@@ -287,9 +374,12 @@ if [ "$MINIMAL" -eq 0 ]; then
   if have tmux && [ "$OFFLINE" -eq 0 ]; then
     for tp in tmux-plugins/tpm tmux-plugins/tmux-resurrect tmux-plugins/tmux-continuum; do
       dest="$HOME/.tmux/plugins/${tp#*/}"
-      [ -d "$dest" ] || { info "Cloning tmux plugin ${tp#*/}…"
+      if [ -d "$dest" ]; then :
+      elif dry; then info "[dry-run] clone tmux plugin ${tp#*/}"
+      else info "Cloning tmux plugin ${tp#*/}…"
         git clone --depth 1 "https://github.com/$tp" "$dest" >/dev/null 2>&1 \
-          || warn "tmux plugin ${tp#*/} clone failed"; }
+          || warn "tmux plugin ${tp#*/} clone failed"
+      fi
     done
   fi
   # pass — GPG-encrypted Unix password store (needs your own GPG key; see SECURITY.md)
@@ -309,7 +399,7 @@ if [ "$MINIMAL" -eq 0 ]; then
   if [ "$NO_ALACRITTY" -eq 0 ] && ! have alacritty; then
     info "Installing alacritty…"
     if [ "$PM" = brew ]; then
-      brew install --cask alacritty || warn "alacritty cask failed — see https://alacritty.org"
+      run brew install --cask alacritty || warn "alacritty cask failed — see https://alacritty.org"
     else
       pkg_install alacritty || warn "alacritty not packaged here — see https://alacritty.org"
     fi
@@ -319,7 +409,10 @@ fi
 # --- Neovim + LazyVim (skipped by --minimal / --no-nvim) ---
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
   info "Setting up Neovim + LazyVim…"
-  if [ "$PM" = brew ]; then
+  if dry; then
+    # don't call nvim_recent here — invoking nvim would create ~/.local/state/nvim
+    info "[dry-run] install build tools + ensure Neovim >= 0.9 (LazyVim)"
+  elif [ "$PM" = brew ]; then
     have cc || warn "run 'xcode-select --install' for a C compiler (nvim treesitter/telescope)"
     nvim_recent || pkg_install neovim || warn "neovim install failed — try: brew install neovim"
   else
@@ -373,7 +466,8 @@ fi
 
 # --- Nerd Font — https://github.com/ryanoasis/nerd-fonts ---
 if [ "$NO_FONT" -eq 0 ]; then
-  if [ "$PM" = brew ]; then
+  if dry; then info "[dry-run] install JetBrainsMono Nerd Font"
+  elif [ "$PM" = brew ]; then
     info "Installing JetBrainsMono Nerd Font (cask)…"
     brew install --cask font-jetbrains-mono-nerd-font \
       && ok "Font installed — set your terminal font to 'JetBrainsMono Nerd Font'." \
@@ -399,6 +493,7 @@ fi
 # --- symlinks (backs up any existing real file) ---
 link() {
   local src="$1" dst="$2"
+  dry && { info "[dry-run] link $dst → $src"; return 0; }
   mkdir -p "$(dirname "$dst")"
   if   [ -L "$dst" ]; then rm -f "$dst"
   elif [ -e "$dst" ]; then
@@ -411,10 +506,14 @@ link() {
 info "Linking config…"
 if [ "$XDG" -eq 1 ]; then
   ZDOTDIR_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
-  mkdir -p "$ZDOTDIR_PATH"
-  # ~/.zshenv points zsh at the XDG location; append only if not already set.
-  grep -qs 'ZDOTDIR=' "$HOME/.zshenv" 2>/dev/null \
-    || printf '\nexport ZDOTDIR="%s"\n' "$ZDOTDIR_PATH" >> "$HOME/.zshenv"
+  if dry; then
+    info "[dry-run] mkdir $ZDOTDIR_PATH; ensure 'export ZDOTDIR' in ~/.zshenv"
+  else
+    mkdir -p "$ZDOTDIR_PATH"
+    # ~/.zshenv points zsh at the XDG location; append only if not already set.
+    grep -qs 'ZDOTDIR=' "$HOME/.zshenv" 2>/dev/null \
+      || printf '\nexport ZDOTDIR="%s"\n' "$ZDOTDIR_PATH" >> "$HOME/.zshenv"
+  fi
   link "$REPO_DIR/zsh/.zshrc"            "$ZDOTDIR_PATH/.zshrc"
 else
   link "$REPO_DIR/zsh/.zshrc"            "$HOME/.zshrc"
@@ -426,7 +525,7 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 # tmux config
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 # tmux-sessionizer helper on PATH (bound to prefix+f in tmux.conf)
-[ "$MINIMAL" -eq 0 ] && { mkdir -p "$HOME/.local/bin"; \
+[ "$MINIMAL" -eq 0 ] && { dry || mkdir -p "$HOME/.local/bin"; \
   link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
 # alacritty config (client-side terminal; skipped by --minimal/--server/--no-alacritty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
@@ -440,12 +539,16 @@ fi
 # --- point git at delta via an include (non-destructive & revertible: your
 #     existing ~/.gitconfig keys are untouched; drop the include to undo) ---
 if have delta; then
-  info "Configuring git to use delta…"
   frag="$REPO_DIR/git/delta.gitconfig"
-  if ! git config --global --get-all include.path 2>/dev/null | grep -qxF "$frag"; then
+  if git config --global --get-all include.path 2>/dev/null | grep -qxF "$frag"; then
+    ok "git-delta include already active"
+  elif dry; then
+    info "[dry-run] add git-delta include to ~/.gitconfig"
+  else
+    info "Configuring git to use delta…"
     git config --global --add include.path "$frag"
+    ok "git uses delta (undo: git config --global --unset-all include.path '$frag')"
   fi
-  ok "git uses delta (undo: git config --global --unset-all include.path '$frag')"
 fi
 
 # --- default shell (skip if the login shell is already some zsh) ---
@@ -455,19 +558,27 @@ if [ "$NO_CHSH" -eq 0 ]; then
     */zsh) : ;;   # already a zsh — don't force a different one (brew vs system)
     *)
       if [ -n "$ZSH_BIN" ]; then
-        info "Setting default shell to $ZSH_BIN…"
-        chsh -s "$ZSH_BIN" || warn "chsh failed — run manually: chsh -s $ZSH_BIN"
+        if dry; then info "[dry-run] chsh -s $ZSH_BIN  (set default login shell)"
+        else
+          info "Setting default shell to $ZSH_BIN…"
+          chsh -s "$ZSH_BIN" || warn "chsh failed — run manually: chsh -s $ZSH_BIN"
+        fi
       fi
       ;;
   esac
 fi
 
 echo
-ok   "Done!  Start your new shell with:  exec zsh"
-info "First zsh launch auto-installs zinit + plugins (one-time, ~10s)."
-[ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ] && \
-  info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."
-info "Audit log: $LOGFILE"
+if dry; then
+  ok   "Dry run complete — nothing was installed, linked, or changed."
+  info "Re-run without --dry-run to apply, or './install.sh --doctor' to inspect the current state."
+else
+  ok   "Done!  Start your new shell with:  exec zsh"
+  info "First zsh launch auto-installs zinit + plugins (one-time, ~10s)."
+  [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ] && \
+    info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."
+  info "Audit log: $LOGFILE"
+fi
 
 # Failures above are non-fatal (they only `warn`); exit success so callers/CI
 # don't trip over a trailing conditional's exit status.

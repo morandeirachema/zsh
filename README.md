@@ -63,6 +63,10 @@ installs missing tools, backs up any existing `~/.zshrc` → `~/.zshrc.pre-conso
 then symlinks this repo into place. The first launch of `zsh` (and of `nvim`)
 installs plugins once.
 
+> [!TIP]
+> Preview a run without changing anything — `./install.sh --dry-run`.
+> Audit an existing setup (tools · symlinks · font · git) — `./install.sh --doctor`.
+
 <details>
 <summary><b>🍎 macOS notes &nbsp;·&nbsp; 🚩 all install flags</b></summary>
 
@@ -74,6 +78,8 @@ changed; the Nerd Font is installed via `brew --cask`.
 
 | Flag | Effect |
 | ---- | ------ |
+| `--dry-run` | print every package/symlink/change the run **would** make — touch nothing |
+| `--doctor` | health check: report tools, symlinks, font, git config — then exit |
 | `--minimal` | zsh + plugins + prompt only (skip the extra CLI tools, nvim, font) |
 | `--server` | headless box: skip the Nerd Font (it lives on your client) |
 | `--offline` | air-gapped: no internet fetches — packages come from your mirror |

@@ -31,6 +31,15 @@ jobs:
           python3 -c "import tomllib; tomllib.load(open('alacritty/alacritty.toml','rb'))"
       - name: Validate git-delta fragment
         run: git config -f git/delta.gitconfig --list
+      - name: --dry-run and --doctor exit 0 and touch nothing
+        run: |
+          # run against an isolated empty HOME so any stray write is detectable
+          h="$(mktemp -d)"
+          HOME="$h" ./install.sh --dry-run -y --no-chsh >/dev/null
+          HOME="$h" ./install.sh --doctor              >/dev/null
+          n="$(find "$h" -mindepth 1 | wc -l)"
+          [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
+          echo "✓ dry-run + doctor: exit 0, zero writes"
       - name: Lua parse (nvim config)
         run: |
           sudo apt-get install -y lua5.4 || sudo apt-get install -y lua5.3 || true

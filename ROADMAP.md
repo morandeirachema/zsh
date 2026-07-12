@@ -83,10 +83,13 @@ Ideas taken from three Mischa van den Burg videos (see
 - **Authenticated GitHub API** — the release-binary version lookups
   (lazygit/carapace/fabric) use `GITHUB_TOKEN`/`GH_TOKEN` when present to avoid the
   anonymous rate limit; CI passes a least-privilege (`contents: read`) token.
+- **`--dry-run`** — prints every package/symlink/change a run would make and
+  touches nothing (verified: zero filesystem writes in an isolated `$HOME`).
+- **`--doctor`** — health check for tools, symlinks (→ repo), Nerd Font, and the
+  git-delta include; side-effect-free (routes nvim's state to a throwaway dir).
 
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
-- `install.sh --dry-run` and a `doctor`/`checkhealth` subcommand for the shell.
 - Pin release-binary versions (fabric/lazygit/neovim/carapace fetch `latest`) for
   reproducibility, mirroring `ZINIT_PIN`.
 - Video-ideas P2 remaining: SSH port-forward helpers · Synology NAS sync pattern
