@@ -47,6 +47,15 @@ ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; log "OK $*"; }
 warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; log "!! $*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 sha256_of() { if have sha256sum; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
+# GitHub API calls, authenticated when a token is present (GITHUB_TOKEN/GH_TOKEN)
+# → lifts the 60-req/hour unauthenticated rate limit that bites on shared IPs / CI.
+# Only the api.github.com version lookups use this; release downloads don't (the
+# token must not follow the cross-host redirect to the CDN).
+gh_curl() {
+  local tok="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+  if [ -n "$tok" ]; then curl -sSL -H "Authorization: Bearer $tok" "$@"
+  else curl -sSL "$@"; fi
+}
 
 # --- release-binary fallbacks (used when a tool isn't in the repos) ---
 install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
@@ -57,7 +66,7 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
     *) return 1 ;;
   esac
   tmp="$(mktemp -d)"
-  ver="$(curl -sSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest \
+  ver="$(gh_curl https://api.github.com/repos/jesseduffield/lazygit/releases/latest \
          | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
   [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
   curl -sSfL -o "$tmp/lg.tgz" \
@@ -87,7 +96,7 @@ install_carapace_release() {  # https://github.com/carapace-sh/carapace-bin
     *) return 1 ;;
   esac
   tmp="$(mktemp -d)"
-  ver="$(curl -sSL https://api.github.com/repos/carapace-sh/carapace-bin/releases/latest \
+  ver="$(gh_curl https://api.github.com/repos/carapace-sh/carapace-bin/releases/latest \
          | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
   [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
   curl -sSfL -o "$tmp/cb.tgz" \
@@ -122,7 +131,7 @@ install_fabric_release() {    # https://github.com/danielmiessler/fabric
   esac
   asset="fabric_${os}_${arch}.tar.gz"
   tmp="$(mktemp -d)"
-  ver="$(curl -sSL https://api.github.com/repos/danielmiessler/fabric/releases/latest \
+  ver="$(gh_curl https://api.github.com/repos/danielmiessler/fabric/releases/latest \
          | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
   [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
   curl -sSfL -o "$tmp/fabric.tgz" \

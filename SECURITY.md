@@ -20,7 +20,9 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   `curl | sh` installers (starship, zoxide) are a labelled fallback only.
 - **Release binaries are checksum-verified**: lazygit, neovim, carapace and fabric
   downloads are SHA256-checked against their published checksums and refused on
-  mismatch.
+  mismatch. Version lookups hit the GitHub API and use `GITHUB_TOKEN`/`GH_TOKEN`
+  when set (only to lift the anonymous rate limit; the token is never sent to the
+  download CDN).
 - **Pin zinit** for reproducible/air-gapped builds by exporting `ZINIT_PIN=<sha>`
   before the shell starts (e.g. in `~/.zshenv`).
 - **Air-gapped:** run `./install.sh --offline` to skip every internet fetch

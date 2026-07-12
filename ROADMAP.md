@@ -76,8 +76,18 @@ Ideas taken from three Mischa van den Burg videos (see
   Nerd Font, symlinked; installed by default on desktops, skipped by
   `--server`/`--no-alacritty`. Removes the manual "set your terminal font" step.
 
+## ✅ Done (hardening pass)
+- **CI now tests reversibility** — the `extras` job runs `./uninstall.sh` and
+  asserts (via `scripts/ci-uninstall-check.sh`) that every symlink is gone, on
+  Ubuntu/Fedora/Arch. Protects the "reversible" guarantee against regressions.
+- **Authenticated GitHub API** — the release-binary version lookups
+  (lazygit/carapace/fabric) use `GITHUB_TOKEN`/`GH_TOKEN` when present to avoid the
+  anonymous rate limit; CI passes a least-privilege (`contents: read`) token.
+
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - `install.sh --dry-run` and a `doctor`/`checkhealth` subcommand for the shell.
+- Pin release-binary versions (fabric/lazygit/neovim/carapace fetch `latest`) for
+  reproducibility, mirroring `ZINIT_PIN`.
 - Video-ideas P2 remaining: SSH port-forward helpers · Synology NAS sync pattern
   (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)). Alacritty is done.

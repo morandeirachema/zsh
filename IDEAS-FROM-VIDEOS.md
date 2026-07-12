@@ -1,4 +1,4 @@
-# Improvement ideas — distilled from 3 videos
+# Improvement ideas — distilled from 4 videos
 
 > **Status:** **P1 implemented** on 2026-07-11 (tmux-sessionizer, fabric, pass,
 > deeper fzf previews) — see the *Done* markers below and `ROADMAP.md`. P2/P3
@@ -7,11 +7,14 @@
 
 ## Sources
 
-All three are by **Mischa van den Burg** (DevOps / stateless-workstation focus):
+Sources 1–3 are by **Mischa van den Burg** (DevOps / stateless-workstation focus);
+source 4 is by **Jay LaCroix / Learn Linux TV** (sysadmin Bash/Vim/tmux + Ansible):
 
 1. My Entire Neovim + Tmux + AI Workflow (2026 Update) — <https://www.youtube.com/watch?v=fjoGZ90bOzw>
 2. How I Rebuilt My Entire Workstation After Quitting Arch Linux — <https://www.youtube.com/watch?v=S6T5M4jLqR8>
 3. 5 CLI Tools That Actually Changed How I Work in 2026 — <https://www.youtube.com/watch?v=tmnd3M1k5Jw>
+4. My Daily Driver Terminal Setup (tmux, Vim, Bash, Ansible) — <https://www.youtube.com/watch?v=Q8Fv_BfQuuc>
+   (dotfiles zip: <https://learnlinux.link/dotfiles>)
 
 His stack overlaps ours a lot (zsh + tmux + fzf + LazyVim + a "git-centered stateless
 workstation" philosophy), so the useful signal is the handful of tools/patterns we **don't**
@@ -161,3 +164,42 @@ If any of these are wanted, they should be their **own** repo/setup, not folded 
 Every item above must keep the repo's hard rules: `command -v` graceful degradation, no network at
 startup, secrets/host-specifics only in `~/.zshrc.local`, route installs through `pkg_install` (or a
 SHA256-verified release helper), and stay CI-green.
+
+---
+
+## Source 4 — Learn Linux TV (sysadmin Bash/Vim/tmux + Ansible)
+
+Added 2026-07-12 from **Jay LaCroix / Learn Linux TV** — *"My Daily Driver Terminal Setup (tmux, Vim,
+Bash, Ansible)"* (<https://www.youtube.com/watch?v=Q8Fv_BfQuuc>); dotfiles zip
+<https://learnlinux.link/dotfiles>. His stack is **Bash + Vim** (we're zsh + Neovim/LazyVim), so the
+shell/editor specifics don't port — but several sysadmin-grade tmux and shell helpers do, and they
+fit this repo's "safe on servers" posture. I read his actual `tmux.conf`, `bashrc`, `bash/aliases`,
+`bash/functions`, and `bash/prompt`.
+
+### Worth taking
+
+| Idea | What it is | Fit | Effort | Cross-platform note |
+| ---- | ---------- | --- | ------ | ------------------- |
+| **tmux `synchronize-panes` toggle** | `prefix y` → type one command into every pane at once | High (multi-server ops) | S | tmux-native, safe everywhere |
+| **`extract()`** | one function unpacks tar/gz/xz/zip/7z/rar/… | High | S | uses standard tools; guard each |
+| **`mkcd` / `md`** | `mkdir -p` + `cd` in one step | High | S | portable |
+| **tmux window mgmt** | Shift-←/→ switch windows · Ctrl-Shift-←/→ swap windows | Med | S | tmux-native |
+| **Safety-net aliases** | `cp -iv` `mv -iv` `ln -iv` `mkdir -pv` `rm -I` (prompt before clobber) | Med (privileged boxes) | S | ⚠️ `rm -I` / `--preserve-root` are GNU-only — guard for macOS |
+| **Resource one-liners** | `mem10` `cpu10` `dir10` (top RAM / CPU / dirs) | Med | S | ⚠️ `ps auxf` forest + `sort -h` are GNU — guard for macOS |
+| **`weather`** | `curl wttr.in` | Low | S | on-demand network only |
+| **Ansible fleet deploy** | a playbook/role to roll this repo onto many hosts (his `ansible-pull` model) | Med (fleets) | L | parallel to our symlink model |
+
+### Deliberately skipped (don't fit this repo)
+
+- **Prefix `C-j`/`C-f`** instead of `C-b` — we keep `C-b` on purpose (documented).
+- **`cd` auto-runs `ls`** — divisive, and we lean on zoxide + `AUTO_CD`.
+- **`tssh` = ssh with host-key checking disabled** — a security anti-pattern that conflicts with our
+  production posture.
+- **`@continuum-boot`** (auto-start a tmux systemd service on boot) — too invasive to enable by default.
+- **Vim / `vimrc` + the Bash prompt** — we use LazyVim + starship, both richer.
+
+### Recommended first picks
+
+`synchronize-panes` (`prefix y`), `extract()`, and `mkcd` — all small, universal, high-utility. Then
+the tmux window switch/swap keys. The safety-net and resource aliases are worth it too but need macOS
+guards (flagged above), matching the cross-platform bar the P1 / Alacritty work already holds to.

@@ -430,9 +430,10 @@ doesn't uninstall packages.
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
 │   ├── tmux-sessionizer.sh # fzf project switcher  ->  ~/.local/bin/tmux-sessionizer
-│   ├── ci-extras-check.sh  # CI: assert pass/fabric/sessionizer installed
+│   ├── ci-extras-check.sh  # CI: assert pass/fabric/sessionizer/alacritty installed
+│   ├── ci-uninstall-check.sh # CI: assert uninstall.sh removes every symlink
 │   └── vendor-plugins.sh   # pre-seed plugins for offline hosts
-├── .github/workflows/ci.yml    # shellcheck + lint + minimal & extras multi-distro smoke
+├── .github/workflows/ci.yml    # shellcheck + lint + minimal/extras/uninstall multi-distro smoke
 ├── CLAUDE.md · SECURITY.md · ROADMAP.md
 └── README.md
 ```

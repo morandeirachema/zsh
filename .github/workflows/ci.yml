@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: CI only reads the repo. The token below is used solely to
+# raise the GitHub API rate limit for release-binary version lookups.
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -89,10 +94,14 @@ jobs:
       # actually exercised: pass, fabric (SHA256-verified GitHub release),
       # tmux-sessionizer symlink, and the fzf preview opts. Asserted by
       # scripts/ci-extras-check.sh (fabric is a soft check — network dependent).
-      - name: Extras (pass · fabric · tmux-sessionizer) on ${{ matrix.name }}
+      - name: Extras + uninstall on ${{ matrix.name }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}   # authenticated API calls → no rate limit
         run: |
-          docker run --rm -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
+          docker run --rm -e GITHUB_TOKEN -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
             ${{ matrix.prep }}
             ./install.sh --no-nvim --no-font --no-chsh -y
             bash scripts/ci-extras-check.sh ${{ matrix.name }}
+            ./uninstall.sh
+            bash scripts/ci-uninstall-check.sh ${{ matrix.name }}
           '
