@@ -2,7 +2,7 @@
 
 # ⌨️ &nbsp;console
 
-### A fast, portable, production-grade **zsh** setup — one clone, every machine.
+### Turn a plain terminal into a fast, friendly, guided workspace — **one clone, every machine.**
 
 [![CI](https://github.com/morandeirachema/zsh/actions/workflows/ci.yml/badge.svg)](https://github.com/morandeirachema/zsh/actions/workflows/ci.yml)
 ![shell](https://img.shields.io/badge/shell-zsh-1e88e5)
@@ -15,179 +15,503 @@
 ❯ ▏
 ```
 
-*Over SSH the prompt grows a `user@host` badge (root in red) and your Kubernetes / AWS context —*
-*so you never run a command on the wrong box:*
+*New to all this? Start with the **[2-minute mental model](#-never-used-a-terminal-like-this-2-minute-mental-model)**.*
+*Just want it running? **[Quick start](#-quick-start)**.*
 
-```console
-root@web-01  󰕈    /etc/nginx    main   ☸ prod:web    aws prod-admin          14:32
-❯ ▏
-```
-
-**[Quick start](#-quick-start)** · **[What's inside](#-whats-inside)** · **[Shortcuts](#️-keyboard-shortcuts)** · **[Aliases](#-aliases)** · **[Security](#-security--production)**
+**[Mental model](#-never-used-a-terminal-like-this-2-minute-mental-model)** ·
+**[Quick start](#-quick-start)** ·
+**[Guided tour](#-a-guided-tour)** ·
+**[Cheat sheet](#-cheat-sheet)** ·
+**[Safety net](#-safety-net-preview-inspect-back-up-restore)** ·
+**[Security](#-security--production)**
 
 </div>
 
 ---
 
-It started as a personal desktop shell and grew into something you can trust on a
-fleet of servers: **instant startup**, **the same everywhere**, **safe on
-privileged boxes**, and **reversible**. One `git clone` + one command and every
-Linux or macOS machine looks and behaves identically.
+## 👋 What is this?
 
-## ✨ Highlights
+A terminal, out of the box, is a black rectangle where you type commands and hope
+you remember them. **`console` turns that rectangle into a workspace that helps you
+as you type** — it suggests the rest of your commands, colours mistakes red before
+you hit Enter, finds files and folders in a couple of keystrokes, shows you exactly
+where you are, and keeps your work alive when your connection drops.
 
-- ⚡ **Instant startup** — plugins load *asynchronously* after the prompt (zinit turbo mode).
-- 🧭 **Never act on the wrong target** — `user@host` over SSH (root in red) + live Kubernetes / AWS context in the prompt.
-- 📦 **One command, any distro** — idempotent installer for apt · dnf · pacman · zypper · **Homebrew**.
-- 🔒 **Hardened by default** — secure `compinit`, secrets kept out of history, **SHA256-verified** downloads, non-destructive git config.
-- 🧊 **Reproducible & air-gappable** — pinned plugins, `--offline` mode, plugin vendoring.
-- ↩️ **Reversible** — timestamped backups, `uninstall.sh`, and an install audit log.
-- 🪶 **Degrades gracefully** — every tool/alias is guarded, so a `--minimal` box still works.
+It's a **dotfiles** repo: a folder of configuration files you `git clone` once and
+apply with a single command. Do that on your laptop, a server, or a fresh cloud VM
+and they all look and behave **identically**. It started as one person's desktop
+shell and grew into something safe to run on production servers.
+
+> [!NOTE]
+> You don't need to know zsh, tmux, git, or Vim to use this — the sections below
+> teach each one from scratch. If a word is unfamiliar, keep reading; it's
+> explained.
+
+---
+
+## 🧠 Never used a terminal like this? (2-minute mental model)
+
+Three different programs stack on top of each other every time you open a terminal.
+Knowing which is which makes everything else click:
+
+```text
+your screen
+└─ Terminal emulator   (Alacritty)   the app/window that draws text, colours, fonts
+   └─ Shell            (zsh)         reads your keystrokes and runs your commands
+      └─ Prompt        (starship)    the ❯ line: where you are, git status, the clock
+         ❯ git status               ← you type here; the shell runs it
+```
+
+- **Terminal emulator** — the *window*. It just displays characters and sends your
+  keypresses inward. `console` ships one ([Alacritty](https://alacritty.org)), but
+  any terminal works.
+- **Shell** — the *program that runs commands*. The default on most systems is
+  `bash`; `console` uses **[zsh](https://www.zsh.org)**, which is compatible but far
+  more helpful (suggestions, colours, smarter completion).
+- **Prompt** — the little line before your cursor. `console` uses
+  **[starship](https://starship.rs)** to pack useful context into it (folder, git
+  branch, how long the last command took…).
+- **Dotfiles** — the config files that shape all of the above. They start with a
+  `.` (e.g. `~/.zshrc`), which is why they're "hidden". This repo *is* your dotfiles.
+
+**How it applies (the important trick):** `install.sh` doesn't *copy* files into your
+home directory — it **symlinks** them (creates a shortcut) back to this repo. So once
+installed, editing a file in `~/code/console` **is** editing your live config. Pull an
+update, and every machine gets it. Change your mind, and `./uninstall.sh` removes the
+shortcuts and leaves your originals untouched.
+
+> [!TIP]
+> A command "in your terminal" is just a word you type and run. When this guide says
+> *run `foo`*, it means: type `foo`, press Enter. Press `Ctrl-C` to cancel anything
+> that's running or a line you don't want to submit.
 
 ---
 
 ## 🚀 Quick start
 
 > [!NOTE]
-> Only `git` + `curl` are needed up front — the installer adds everything else.
+> Only `git` and `curl` need to exist up front — the installer adds everything else,
+> for your distro, automatically.
 
 ```bash
 git clone https://github.com/morandeirachema/zsh.git ~/code/console
 cd ~/code/console
-./install.sh
-exec zsh
+./install.sh          # want to look before you leap? ./install.sh --dry-run
+exec zsh              # start your new shell (or just open a new terminal)
 ```
 
-The installer is **idempotent** (safe to re-run). It detects your package manager,
-installs missing tools, and — **before touching anything** — snapshots every config
-it may replace into one dated folder
-(`~/.local/state/console/backups/<ts>/`), then symlinks this repo into place. The
-first launch of `zsh` (and of `nvim`) installs plugins once.
+That's it. The installer detects your package manager, installs any missing tools,
+**backs up anything it will replace** (see [Safety net](#-safety-net-preview-inspect-back-up-restore)),
+then links this repo into place. Your **first** `zsh` launch spends ~10 s installing
+plugins once; every launch after is instant. Your first `nvim` launch does the same
+for the editor.
 
 > [!TIP]
-> Preview a run without changing anything — `./install.sh --dry-run`.
-> Audit an existing setup (tools · symlinks · font · git) — `./install.sh --doctor`.
+> **Preview first:** `./install.sh --dry-run` prints everything it *would* do and
+> changes nothing. **Already set up?** `./install.sh --doctor` reports what's
+> installed, what's linked, and what's missing.
 
 <details>
-<summary><b>🍎 macOS notes &nbsp;·&nbsp; 🚩 all install flags</b></summary>
+<summary><b>🍎 macOS notes &nbsp;·&nbsp; 🚩 every install flag</b></summary>
 
 <br>
 
-**macOS:** install [Homebrew](https://brew.sh) and — for Neovim's treesitter — the
-Xcode CLT (`xcode-select --install`). The login shell is already zsh, so it isn't
-changed; the Nerd Font is installed via `brew --cask`.
+**macOS:** install [Homebrew](https://brew.sh) first and, for Neovim's syntax
+engine, the Xcode command-line tools (`xcode-select --install`). Your login shell is
+already zsh, so it isn't changed; the font is installed via `brew --cask`.
 
 | Flag | Effect |
 | ---- | ------ |
 | `--dry-run` | print every package/symlink/change the run **would** make — touch nothing |
 | `--doctor` | health check: report tools, symlinks, font, git config — then exit |
 | `--minimal` | zsh + plugins + prompt only (skip the extra CLI tools, nvim, font) |
-| `--server` | headless box: skip the Nerd Font (it lives on your client) |
+| `--server` | headless box: skip the Nerd Font **and** Alacritty (both live on your client) |
 | `--offline` | air-gapped: no internet fetches — packages come from your mirror |
 | `--xdg` | put `.zshrc` under `ZDOTDIR=~/.config/zsh` to keep `$HOME` tidy |
 | `--no-nvim` | don't install Neovim/LazyVim or touch `~/.config/nvim` |
 | `--no-fabric` | don't install [fabric](https://github.com/danielmiessler/fabric) (the AI-patterns CLI) |
 | `--no-alacritty` | don't install [Alacritty](https://alacritty.org) or link its config |
 | `--no-font` | skip the Nerd Font download |
-| `--no-chsh` | don't change the default login shell |
+| `--no-chsh` | don't change your default login shell |
 | `-y`, `--yes` | non-interactive |
 
 </details>
 
-> [!TIP]
-> Using the bundled **Alacritty** config? The font is already set — nothing to do.
-> On any other terminal, set its font to **JetBrainsMono Nerd Font** so the prompt
-> icons render (e.g. kitty: `font_family JetBrainsMono Nerd Font`).
+> [!IMPORTANT]
+> **Fonts & icons.** The prompt uses special glyphs (folder, git, distro icons) that
+> need a **Nerd Font**. If you use the bundled Alacritty config, it's already set. On
+> any other terminal, set its font to **JetBrainsMono Nerd Font** (e.g. kitty:
+> `font_family JetBrainsMono Nerd Font`). Seeing boxes like `□`? That's a missing
+> font, not a broken install.
 
 ---
 
-## 🧩 What's inside
+## 🧩 The tools at a glance
 
-| | Tool | Role |
+Everything here is free, open-source, and cross-platform. You'll meet each one in the
+[guided tour](#-a-guided-tour) below.
+
+| | Tool | In one line |
 |---|------|------|
-| 🔌 | [zinit](https://github.com/zdharma-continuum/zinit) | plugin manager — **turbo mode** loads plugins async for instant startup |
-| 🚀 | [starship](https://starship.rs) | the prompt ([`starship/starship.toml`](starship/starship.toml)) |
-| 🔍 | [fzf](https://github.com/junegunn/fzf) | fuzzy finder — history, files, cd |
-| 📁 | [zoxide](https://github.com/ajeetdsouza/zoxide) | smarter `cd` that learns your habits |
-| 📃 | [eza](https://github.com/eza-community/eza) · [bat](https://github.com/sharkdp/bat) | modern `ls` / `cat` |
-| ⚡ | [fd](https://github.com/sharkdp/fd) · [ripgrep](https://github.com/BurntSushi/ripgrep) | fast `find` / `grep` (fd powers fzf) |
-| 🌈 | [delta](https://github.com/dandavison/delta) | syntax-highlighting pager for `git diff` |
-| 📖 | [tealdeer](https://github.com/tealdeer-rs/tealdeer) | `tldr` — quick, offline command examples |
-| 🐙 | [lazygit](https://github.com/jesseduffield/lazygit) | full-screen terminal UI for git |
-| ✏️ | [Neovim](https://neovim.io) + [LazyVim](https://www.lazyvim.org) | editor, config vendored in [`nvim/`](nvim/) |
-| 🧮 | [jq](https://github.com/jqlang/jq) · [yq](https://github.com/mikefarah/yq) | JSON / YAML processing |
-| 🌱 | [direnv](https://direnv.net) · [carapace](https://carapace.sh) | per-directory env · completions for 1000+ tools |
-| 🪟 | [tmux](https://github.com/tmux/tmux) | persistent SSH sessions, survive reboots — plus a [sessionizer](#-tmux) (`prefix f`) |
-| 🔑 | [pass](https://www.passwordstore.org) | GPG-encrypted password store (bring your own key) |
-| 🤖 | [fabric](https://github.com/danielmiessler/fabric) | run AI "patterns" as Unix filters (`--no-fabric` to skip) |
-| 🖥️ | [Alacritty](https://alacritty.org) | GPU terminal, Catppuccin + Nerd Font preset ([`alacritty/`](alacritty/); `--no-alacritty` to skip) |
+| 🔌 | [zinit](https://github.com/zdharma-continuum/zinit) | plugin manager — loads zsh plugins **async** so startup stays instant |
+| 🚀 | [starship](https://starship.rs) | the prompt: puts useful context on your command line |
+| 🔍 | [fzf](https://github.com/junegunn/fzf) | **fuzzy finder** — search history, files, and folders by typing a few letters |
+| 📁 | [zoxide](https://github.com/ajeetdsouza/zoxide) | a smarter `cd` that learns your habits (`z proj`) |
+| 📃 | [eza](https://github.com/eza-community/eza) · [bat](https://github.com/sharkdp/bat) | prettier `ls` / `cat` (colours, icons, git status, line numbers) |
+| ⚡ | [fd](https://github.com/sharkdp/fd) · [ripgrep](https://github.com/BurntSushi/ripgrep) | fast, friendly `find` / `grep` |
+| 🌈 | [delta](https://github.com/dandavison/delta) | turns `git diff` into a readable, syntax-highlighted view |
+| 📖 | [tealdeer](https://github.com/tealdeer-rs/tealdeer) | `tldr` — dead-simple example-first help for any command |
+| 🐙 | [lazygit](https://github.com/jesseduffield/lazygit) | a full **visual git** app in your terminal — no flags to memorise |
+| ✏️ | [Neovim](https://neovim.io) + [LazyVim](https://www.lazyvim.org) | a modern, batteries-included text editor |
+| 🧮 | [jq](https://github.com/jqlang/jq) · [yq](https://github.com/mikefarah/yq) | slice and query JSON / YAML |
+| 🌱 | [direnv](https://direnv.net) · [carapace](https://carapace.sh) | per-folder env vars · smart Tab-completion for 1000+ commands |
+| 🪟 | [tmux](https://github.com/tmux/tmux) | keep terminals **alive** across disconnects; split the screen |
+| 🔑 | [pass](https://www.passwordstore.org) | GPG-encrypted password manager (bring your own key) |
+| 🤖 | [fabric](https://github.com/danielmiessler/fabric) | run AI prompts as normal commands (`--no-fabric` to skip) |
+| 🖥️ | [Alacritty](https://alacritty.org) | fast GPU terminal, pre-themed to match (`--no-alacritty` to skip) |
 
 ---
 
-## 🎨 The prompt
+## 🧭 A guided tour
 
-Starship, styled as rounded **Catppuccin Mocha** pills — empty segments vanish, so
-it stays clean and only shows what's relevant.
+Read top to bottom the first time, or jump to what you need:
+**[zsh](#-zsh-the-shell-that-finishes-your-sentences)** ·
+**[prompt](#-the-prompt-reading-your-surroundings)** ·
+**[finding things](#-finding-things-fast)** ·
+**[tmux](#-tmux-never-lose-your-work)** ·
+**[git](#-git-without-the-pain)** ·
+**[Neovim](#-neovim-modal-editing-gently)** ·
+**[AI & passwords](#-ai-and-passwords)**
 
-| Segment | Shows | When |
-| ------- | ----- | ---- |
-| ` user@host` | which machine you're on (root in **red**) | over SSH |
-| `󰕈 os` | the OS / distro | always |
-| ` directory` | path — repo-root **bold**, `…/` truncation, folder icons | always |
-| ` git` | branch + status | in a repo |
-| ` lang` | Node · Python · Rust · Go · Java · PHP · C versions | in a project |
-| `☸ k8s ·  aws · docker` | **cluster** · **cloud account** · container context | when set |
-| *(right)* | ` elapsed time` of the last command + ` HH:MM:SS` | always |
+---
 
-Git status glyphs: `!` modified · `?` untracked · `+` staged · `»` renamed · `✘` deleted · `⇡`/`⇣` ahead/behind. The `❯` turns **red** when the last command failed.
+### 🐚 zsh: the shell that finishes your sentences
+
+`zsh` is the program that runs your commands. `console` layers a few plugins on top
+that make it feel like it's helping you:
+
+- **Autosuggestions** — as you type, the rest of a command you've run before appears
+  in **grey**. Press **`→`** (or `End`) to accept it, `Ctrl-→` to accept one word.
+  You'll re-type far less.
+- **Syntax highlighting** — a valid command turns **green**, an unknown one **red**,
+  *before* you press Enter. Red = typo. Catch mistakes early.
+- **Smarter Tab** — press **`Tab`** and instead of a dumb list you get a **fuzzy,
+  searchable menu** with file previews ([fzf-tab](https://github.com/Aloxaf/fzf-tab)).
+  Start typing to filter it.
+- **History that reads your mind** — type the start of an old command and press
+  **`↑`** to cycle only through matching history.
 
 > [!TIP]
-> The kube/AWS segments can be scoped to infra directories — see the commented
-> `detect_*` filters in [`starship.toml`](starship/starship.toml).
+> **Try it now:** type `cd ~/code` and press Enter, then just type `cd ` and press
+> `Tab` — fuzzy-pick a subfolder. Type `gi` and watch the colour; type `git` and see
+> it go green.
 
----
+<details>
+<summary><b>The plugins doing the work</b> (all loaded asynchronously)</summary>
 
-## ⌨️ Keyboard shortcuts
+<br>
+
+| Plugin | What you get |
+| ------ | ------------ |
+| [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) | greys out the rest of a matching past command; `→`/`End` accepts |
+| [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting) | live green/red command colouring |
+| [fzf-tab](https://github.com/Aloxaf/fzf-tab) | replaces the plain `Tab` menu with a fuzzy selector + previews |
+| [zsh-history-substring-search](https://github.com/zsh-users/zsh-history-substring-search) | `↑`/`↓` cycles only history matching what you typed |
+| [zsh-completions](https://github.com/zsh-users/zsh-completions) | a big bundle of extra Tab-completion definitions |
+| [zsh-you-should-use](https://github.com/MichaelAquilina/zsh-you-should-use) | nudges you when a command has an alias you defined |
+
+Plus [**carapace**](https://carapace.sh): value-aware completion for real tools —
+`kubectl get pods -n <Tab>` completes your namespaces, `git checkout <Tab>` your
+branches, `aws --profile <Tab>` your profiles.
+
+</details>
+
+**The keys worth learning first:**
 
 | Key | Does |
 | --- | ---- |
-| `Ctrl-R` | fuzzy-search shell history (fzf) |
-| `Ctrl-T` | fuzzy-pick a file path — **previews** with bat / eza-tree |
-| `Alt-C` | fuzzy `cd` into a subdirectory — **previews** the tree |
-| `Ctrl-/` | toggle the preview pane on/off (in any fzf widget) |
-| `Tab` | fuzzy completion menu with previews (fzf-tab) |
-| `→` / `End` | accept the greyed-out autosuggestion (`Ctrl-→` = one word) |
-| `↑` / `↓` &nbsp;·&nbsp; `Ctrl-P` / `Ctrl-N` | history search matching what you've typed |
-| `z <dir>` &nbsp;·&nbsp; `zi` | jump to a frecent directory · pick interactively |
+| `→` / `End` | accept the grey autosuggestion (`Ctrl-→` = one word) |
+| `Tab` | fuzzy completion menu with previews |
+| `Ctrl-R` | fuzzy-search your entire command **history** |
+| `Ctrl-T` | fuzzy-pick a **file** into the line (with a preview) |
+| `Alt-C` | fuzzy **`cd`** into a subfolder (with a tree preview) |
+| `Ctrl-/` | toggle the preview pane in any of the above |
+| `↑` / `↓` · `Ctrl-P` / `Ctrl-N` | history matching what you've typed so far |
+| `Ctrl-C` · `Ctrl-L` | cancel the current line · clear the screen |
 
 ---
 
-## 🔤 Aliases
+### 🎨 The prompt: reading your surroundings
 
-The everyday ones — full reference is collapsed below. Tool-specific aliases only
-exist when the tool is installed.
+The prompt is the line you type on. `console`'s ([starship](https://starship.rs))
+prompt is a row of rounded "pills" — and **empty ones disappear**, so it's never
+noisy. Each pill answers a question:
 
-| Alias | Does | Alias | Does |
+| Pill | Answers | Shows when |
+| ---- | ------- | ---------- |
+| ` user@host` | *which machine am I on?* (root shown in **red**) | you're connected over SSH |
+| `󰕈 os` | *which OS / distro?* | always |
+| ` directory` | *where am I?* — repo root is **bold**, long paths shrink to `…/` | always |
+| ` git` | *what branch, and is it dirty?* | inside a git repo |
+| ` language` | *Node / Python / Rust / Go / Java / PHP / C version* | inside a matching project |
+| `☸ k8s ·  aws · docker` | *which cluster / cloud account / container?* | when those are set |
+| *(far right)* | * how long the last command took* + * the time* | always |
+
+Git status uses tiny glyphs: `!` modified · `?` untracked · `+` staged · `»` renamed
+· `✘` deleted · `⇡`/`⇣` ahead/behind the remote. And the `❯` itself turns **red** when
+your last command failed — a glance tells you if something went wrong.
+
+> [!TIP]
+> That `user@host` badge and the cluster/cloud pills are a **safety feature**: over
+> SSH on a production box, you can *see* you're not on your laptop before you run
+> something. Scope them to only appear in infra folders via the commented `detect_*`
+> filters in [`starship.toml`](starship/starship.toml).
+
+---
+
+### 🔍 Finding things fast
+
+Most terminal time is spent *locating* things — an old command, a file, a folder.
+`console` makes all three a couple of keystrokes. The magic word is **fuzzy**: you
+don't type the exact name, just a few letters *in order*, and it narrows as you go.
+
+- **`Ctrl-R` — "what was that command?"** Press it, type a fragment (`docker`, `ssh
+  prod`…), pick from the list, Enter. Beats scrolling `↑` fifty times.
+- **`Ctrl-T` — "insert a file path."** Building a command and need a file? `Ctrl-T`,
+  fuzzy-find it, and its path drops into your line — with a `bat` preview of the file.
+- **`Alt-C` — "cd somewhere."** Fuzzy-jump into any subfolder, tree preview included.
+- **`z` (zoxide) — "take me to that project."** After you've visited a folder once,
+  `z proj` jumps straight there from anywhere — it ranks folders by how often/recently
+  you use them. `zi` picks interactively.
+
+And the everyday commands are upgraded, too:
+
+| Instead of | You get | Which means |
+| ---------- | ------- | ----------- |
+| `ls` | [eza](https://github.com/eza-community/eza) | colours, icons, git status, `--tree` |
+| `cat` | [bat](https://github.com/sharkdp/bat) | syntax highlighting + line numbers |
+| `find` | [fd](https://github.com/sharkdp/fd) | simpler syntax, respects `.gitignore`, fast |
+| `grep` | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep) | searches whole trees in milliseconds |
+
+> [!TIP]
+> Forgot a command's options? Run **`tldr <command>`** (e.g. `tldr tar`) for a handful
+> of copy-pasteable examples instead of a wall of `man`.
+
+---
+
+### 🪟 tmux: never lose your work
+
+**The problem it solves:** close the terminal, lose the SSH connection, or reboot —
+and everything you had running is gone. **[tmux](https://github.com/tmux/tmux)** ("terminal
+multiplexer") keeps your terminals running in the background so you can **detach** and
+**re-attach** later, exactly where you left off. It also splits one window into many
+panes. It's the single biggest quality-of-life upgrade for anyone who uses SSH.
+
+The mental model — four nested things:
+
+```text
+tmux server                       one background process; survives disconnects & logouts
+└─ session   "console"            a named workspace, usually one per project
+   ├─ window  1: edit             like a browser tab (full screen)
+   │  ├─ pane  nvim               a split within the window
+   │  └─ pane  a shell
+   └─ window  2: logs
+```
+
+**The prefix.** tmux commands start with a **prefix key** you press first, then let
+go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). So
+"`prefix |`" means: press `Ctrl-b`, release, press `|`.
+
+| Key | Does |
+| --- | ---- |
+| `prefix` `f` | **sessionizer** — fuzzy-pick a project folder → jump to its session |
+| `prefix` `|` / `-` | split the pane **vertically / horizontally** (keeps the folder) |
+| `prefix` `h` `j` `k` `l` | move between panes (vim directions) |
+| `Alt` + arrow keys | move between panes **without** the prefix |
+| `prefix` `H` `J` `K` `L` | resize the current pane (hold to repeat) |
+| `prefix` `c` · `prefix` `n`/`p` | new window · next / previous window |
+| `prefix` `d` | **detach** (leave it all running; re-attach later with `tmux attach`) |
+| `prefix` `[` then `v` / `y` | enter copy-mode, select, copy to the system clipboard |
+| `prefix` `r` | reload the tmux config |
+
+> [!TIP]
+> **`prefix f` is the killer feature.** One key gives you *one tmux session per
+> project*: fuzzy-pick a folder and you're dropped into a session for it (created if
+> needed). It searches `~/code ~/projects ~/src ~/work ~/dev` by default — change that
+> with `export TMUX_SESSIONIZER_PATHS="$HOME/code $HOME/work"` in `~/.zshrc.local`. The
+> script ([`scripts/tmux-sessionizer.sh`](scripts/tmux-sessionizer.sh)) is also on your
+> `PATH`, so `tmux-sessionizer` works from any shell.
+
+> [!IMPORTANT]
+> **Sessions survive reboots.** Via [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)
+> + [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum), layouts auto-save
+> every 15 min and restore on start (`prefix Ctrl-s` / `prefix Ctrl-r` to do it by
+> hand). Pane *contents* are deliberately **not** saved, so scrollback secrets never
+> hit disk.
+
+---
+
+### 🌿 git without the pain
+
+**In one line:** [git](https://git-scm.com) records snapshots of your project so you
+can review changes, undo mistakes, and share work. It's essential — and famously
+fiddly on the command line. `console` softens all three sharp edges:
+
+**1. Short aliases** for the commands you type constantly:
+
+| Alias | Runs | Alias | Runs |
 | ----- | ---- | ----- | ---- |
-| `ll` / `la` / `lt` | eza list / all / tree | `gs` | `git status -sb` |
-| `cat` | `bat` (highlighted) | `gl` | pretty git log |
-| `lg` | lazygit | `gd` | `git diff` (delta) |
-| `v` / `vi` / `vim` | `nvim` | `reload` | `exec zsh` |
-| `..` / `...` | up 1 / 2 dirs | `please` | re-run last cmd with `sudo` |
+| `gs` | `git status -sb` | `gd` | `git diff` |
+| `ga` | `git add` | `gco` · `gb` | checkout · branch |
+| `gc` · `gca` | commit · commit -a | `gl` | pretty log (last 20) |
+| `gp` · `gpl` | push · pull | `gla` | pretty log, all branches |
 
-<details>
-<summary><b>Full alias reference</b> — files, git, DevOps/sysadmin, handy</summary>
+**2. Readable diffs.** [delta](https://github.com/dandavison/delta) reformats
+`git diff` / `git show` into side-by-side, syntax-highlighted, line-numbered output.
+It's wired in through a revertible `include` in your `~/.gitconfig` — your existing
+git settings are never overwritten.
+
+**3. A visual git app.** Run **`lg`** ([lazygit](https://github.com/jesseduffield/lazygit))
+and get a full-screen UI: see your changes, stage individual lines, commit, branch,
+and rebase — no flags to memorise. This is the gentlest on-ramp to git there is.
+
+<details open>
+<summary><b>lazygit keys</b> (press <code>?</code> inside for the full list)</summary>
 
 <br>
+
+| Key | Does | Key | Does |
+| --- | ---- | --- | ---- |
+| `Tab` `←` `→` | move between panels | `c` / `A` | commit / amend |
+| `Space` | stage / unstage (or the panel's main action) | `p` / `P` / `f` | pull / push / fetch |
+| `Enter` | stage individual lines / hunks | `n` `d` `M` `r` | branch: new · delete · merge · rebase |
+| `?` | keybinding help | `s` / `x` / `q` | stash / menu / quit |
+
+</details>
+
+---
+
+### ✍️ Neovim: modal editing, gently
+
+[Neovim](https://neovim.io) is a fast, modern text editor that lives in your terminal.
+It's **modal**, which trips up newcomers but is the whole point once it clicks: instead
+of holding modifier keys, you switch between **modes**.
+
+- **Normal mode** (the default) — keys *move and manipulate* text. `h j k l` = left,
+  down, up, right. This is where you spend most of your time.
+- **Insert mode** — keys *type text*, like a normal editor. Enter it with **`i`**;
+  leave it with **`Esc`**.
+- **Visual mode** — *select* text. Enter with **`v`**.
+
+The five commands that get you through anything:
+
+| Do this | Keys |
+| ------- | ---- |
+| Start typing | `i` (then type; `Esc` to stop) |
+| Save | `:w` Enter |
+| Save & quit | `:wq` Enter *(or `ZZ`)* |
+| **Quit without saving** | `:q!` Enter |
+| Undo · redo | `u` · `Ctrl-r` |
+
+> [!TIP]
+> **Stuck and just want out?** Press `Esc`, then type `:q!` and Enter. That's the
+> famous "how do I exit Vim". Now you'll never be trapped.
+
+`console` ships **[LazyVim](https://www.lazyvim.org)** — Neovim pre-configured with
+autocompletion, a file explorer, fuzzy finding, git signs, and language support, so
+it's useful on day one. Its commands start with a **leader key** = **`Space`**. Tap
+`Space` and pause: a **which-key** menu pops up showing every option. You can explore
+the whole editor without memorising anything.
+
+<details>
+<summary><b>Essential LazyVim keys</b></summary>
+
+<br>
+
+| Key | Does | Key | Does |
+| --- | ---- | --- | ---- |
+| `<Space>` | which-key popup (discover everything) | `<Space>gg` | open lazygit |
+| `<Space><Space>` | find files (fuzzy) | `<S-h>` / `<S-l>` | previous / next buffer |
+| `<Space>/` | search text across the project | `gd` · `gr` · `K` | go to definition · references · hover docs |
+| `<Space>e` | toggle the file explorer | `<Space>ca` · `<Space>cr` | code action · rename symbol |
+| `<Space>,` | switch open buffers | `<Space>l` · `<Space>cm` | plugin manager · install tools |
+
+Themed to match (**Catppuccin Mocha**), with language extras for **Docker ·
+Terraform · YAML · JSON · Markdown · Python**. Plugin versions are pinned in
+`nvim/lazy-lock.json`; add your own under [`nvim/lua/plugins/`](nvim/lua/plugins/) and
+toggle built-ins with `:LazyExtras`.
+
+</details>
+
+> [!NOTE]
+> `vi`, `vim`, and `v` all open Neovim here, and it's the default `$EDITOR` — so git
+> commit messages and the like open in it too.
+
+---
+
+### 🤖 AI and passwords
+
+Two optional, security-minded extras:
+
+- **[fabric](https://github.com/danielmiessler/fabric)** runs AI "patterns" (reusable
+  prompts) as ordinary commands you can pipe into. Set it up once with
+  `fabric --setup`, keep your API key in `~/.zshrc.local` (never the repo), then:
+  `cat notes.md | fsum` (summarise), `git diff | fexplain` (explain code),
+  `ytsum <youtube-url>` (summarise a video). Skip it entirely with `--no-fabric`.
+- **[pass](https://www.passwordstore.org)** is a password manager that encrypts each
+  secret to **your own GPG key** — nothing ships with a key. Create one
+  (`gpg --gen-key`), `pass init <key-id>`, then `pw`/`pwc` store & copy secrets and
+  `passf` fuzzy-picks one to the clipboard. `GPG_TTY` is already set so it can prompt
+  you in the terminal.
+
+---
+
+### 🖥️ Alacritty (the terminal app)
+
+[`alacritty/alacritty.toml`](alacritty/alacritty.toml) is a GPU-accelerated terminal
+pre-themed in **Catppuccin Mocha** with **JetBrainsMono Nerd Font** baked in — so the
+whole stack (terminal → prompt → tmux → editor) is one coherent look and every glyph
+renders with zero setup. It's intentionally minimal, because **tmux** already provides
+tabs, splits, and sessions.
+
+Installed and linked on desktops; skipped on servers (`--server`) and with
+`--no-alacritty`. Prefer kitty, WezTerm, or your OS terminal? Keep it — just point its
+font at *JetBrainsMono Nerd Font*. Nothing else depends on Alacritty.
+
+---
+
+## 📓 Cheat sheet
+
+The 90% you'll use daily. Print it, screenshot it, forget the rest.
+
+<div align="center">
+
+| Shell | | tmux (prefix `Ctrl-b`) | | git / editor | |
+| --- | --- | --- | --- | --- | --- |
+| `Ctrl-R` | search history | `prefix f` | project switcher | `gs` | git status |
+| `Ctrl-T` | pick a file | `prefix \|` `-` | split panes | `gd` | git diff (pretty) |
+| `Alt-C` | cd into a folder | `Alt`+arrows | move panes | `gl` | git log |
+| `Tab` | fuzzy complete | `prefix d` | detach (keep alive) | `lg` | **lazygit** (visual git) |
+| `→` | accept suggestion | `prefix c` | new window | `v` | Neovim (`:q!` to quit) |
+| `z proj` | jump to a folder | `prefix [` | scroll / copy mode | `reload` | restart the shell |
+
+</div>
+
+<details>
+<summary><b>Full alias reference</b> — files · git · DevOps · AI/secrets · handy</summary>
+
+<br>
+
+Tool-specific aliases only exist when the tool is installed.
 
 **Files & search**
 
 | Alias | Command |
 | ----- | ------- |
 | `ls` `ll` `la` `lt` | eza: list · long+git · all · tree (2 levels) |
-| `cat` | `bat --paging=never` |
-| `fd` | `fdfind` on Debian/Ubuntu (also drives fzf) |
-| `rgi` | `rg -i` |
+| `cat` | `bat --paging=never` (syntax-highlighted) |
+| `fd` | `fdfind` on Debian/Ubuntu (also powers fzf) |
+| `rgi` | `rg -i` (case-insensitive ripgrep) |
 
 **Git** (`lg` → lazygit)
 
@@ -215,18 +539,18 @@ exist when the tool is installed.
 | Alias | Command |
 | ----- | ------- |
 | `pw` `pwc` | `pass` · `pass -c` (copy a secret to the clipboard) |
-| `passf` | fuzzy-pick a `pass` entry and copy it (needs fzf) |
+| `passf` | fuzzy-pick a `pass` entry and copy it |
 | `fab` | `fabric` — run an AI pattern |
-| `fsum` `fexplain` | `fabric --pattern summarize` · `explain_code` (pipe into them) |
-| `ytsum <url>` | summarize a YouTube video's transcript |
+| `fsum` `fexplain` | `fabric --pattern summarize` · `explain_code` (pipe in) |
+| `ytsum <url>` | summarise a YouTube video's transcript |
 
 **Navigation & handy**
 
 | Alias | Command |
 | ----- | ------- |
-| `..` `...` `....` | up 1 / 2 / 3 dirs |
+| `..` `...` `....` | up 1 / 2 / 3 folders |
 | `path` | print `$PATH`, one entry per line |
-| `reload` | `exec zsh` |
+| `reload` | `exec zsh` (restart the shell) |
 | `zshrc` | edit `~/.zshrc` |
 | `please` | re-run the last command with `sudo` |
 | `myip` | your public IP |
@@ -236,126 +560,93 @@ exist when the tool is installed.
 
 ---
 
-## 🔌 Plugins
+## ⚙️ Make it yours
 
-Loaded via zinit **turbo mode** — asynchronously, right after the prompt, so
-startup stays instant.
-
-| Plugin | What you get |
-| ------ | ------------ |
-| **zsh-autosuggestions** | greys out the rest of a matching past command; `→`/`End` accepts it |
-| **fast-syntax-highlighting** | live coloring — valid commands green, unknown red — catch typos before Enter |
-| **fzf-tab** | replaces the plain `Tab` menu with a fuzzy fzf selector + previews |
-| **zsh-history-substring-search** | type a fragment, `↑`/`↓` cycles only matching history |
-| **zsh-completions** | a large bundle of extra `Tab`-completion definitions |
-| **zsh-you-should-use** | reminds you when a command has an alias you defined |
-
-Plus [**carapace**](https://carapace.sh) for value-aware completions across 1000+
-tools — `kubectl get pods -n <Tab>` completes your real namespaces, `git checkout
-<Tab>` your branches, `aws --profile <Tab>` your profiles.
-
----
-
-## ✏️ Editor & git UI
-
-<details open>
-<summary><b>lazygit</b> (<code>lg</code>) — stage, commit, branch, rebase without memorizing flags</summary>
-
-<br>
-
-| Key | Does | Key | Does |
-| --- | ---- | --- | ---- |
-| `?` | keybinding help | `c` / `A` | commit / amend |
-| `Tab` `←` `→` | move panels | `p` / `P` / `f` | pull / push / fetch |
-| `Space` | context action (stage, checkout, apply) | `n` `d` `M` `r` | branch: new · del · merge · rebase |
-| `Enter` | stage individual lines/hunks | `s` / `x` / `q` | stash / menu / quit |
-
-</details>
-
-<details>
-<summary><b>LazyVim</b> (Neovim) — leader is <code>Space</code>; press and pause for a which-key menu</summary>
-
-<br>
-
-| Key | Does | Key | Does |
-| --- | ---- | --- | ---- |
-| `<Space>` | which-key popup | `<Space>gg` | open lazygit in Neovim |
-| `<Space><Space>` | find files | `<S-h>` / `<S-l>` | prev / next buffer |
-| `<Space>/` | live-grep project | `gd` · `gr` · `K` | definition · refs · hover |
-| `<Space>e` | file explorer | `<Space>ca` · `<Space>cr` | code action · rename |
-| `<Space>,` | switch buffers | `<Space>l` · `<Space>cm` | Lazy · Mason |
-
-Ships with **Catppuccin Mocha** (matching the shell + tmux) and language extras
-for **Docker · Terraform · YAML · JSON · Markdown · Python** (LSP + formatters +
-treesitter). Plugin versions are pinned in `nvim/lazy-lock.json`. Toggle more with
-`:LazyExtras`; extend via [`nvim/lua/plugins/`](nvim/lua/plugins/).
-
-</details>
-
----
-
-## 🪟 tmux
-
-[`tmux/tmux.conf`](tmux/tmux.conf) — mouse, vi copy mode, truecolor, and a
-Catppuccin status bar matching the prompt (prefix stays `Ctrl-b`).
-
-| Key | Does |
-| --- | ---- |
-| `prefix` `f` | **sessionizer** — fzf-pick a project dir → open/switch to its session |
-| `prefix` `|` / `-` | split vertical / horizontal (keeps cwd) |
-| `prefix` `h` `j` `k` `l` | move between panes |
-| `Alt` + arrows | switch panes **without** the prefix |
-| `prefix` `H` `J` `K` `L` | resize the pane (repeatable) |
-| `prefix` `[` → `v` / `y` | select / copy to system clipboard (OSC52 — works over SSH) |
-| `prefix` `Ctrl-s` / `Ctrl-r` | save / restore the session |
-
-> [!TIP]
-> **`prefix f` (tmux-sessionizer)** gives you one session per project. It searches
-> `~/code ~/projects ~/src ~/work ~/dev` by default — override with
-> `export TMUX_SESSIONIZER_PATHS="$HOME/code $HOME/work"` in `~/.zshrc.local`. The
-> script ([`scripts/tmux-sessionizer.sh`](scripts/tmux-sessionizer.sh)) is on your
-> `PATH` too, so `tmux-sessionizer` works from any shell.
-
-> [!IMPORTANT]
-> Sessions **persist across reboots** via
-> [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) +
-> [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) (auto-save every
-> 15 min, auto-restore on start). Pane *contents* are deliberately **not** saved,
-> so scrollback secrets never hit disk.
-
----
-
-## 🖥️ Terminal (Alacritty)
-
-[`alacritty/alacritty.toml`](alacritty/alacritty.toml) — a GPU-accelerated terminal
-preset in **Catppuccin Mocha** with **JetBrainsMono Nerd Font** baked in, so the
-whole stack (terminal → prompt → tmux → nvim) is one theme and glyphs render with
-no manual font step. It's intentionally minimal — **tmux** provides tabs, splits,
-and sessions.
-
-Installed and linked by default on desktops; skipped on servers (`--server`) and
-with `--no-alacritty`. Prefer a different terminal? Keep using it — just point its
-font at *JetBrainsMono Nerd Font* and, optionally, drop in the Catppuccin Mocha
-palette from the toml. Nothing else in the repo depends on Alacritty.
-
----
-
-## ⚙️ Configuration
-
-- **Per-machine settings** (secrets, local `PATH`, work aliases) → `~/.zshrc.local`,
-  sourced last, only if you own it, and git-ignored. Start from
+- **Per-machine settings** — secrets, a work `PATH`, host-specific aliases → put them
+  in **`~/.zshrc.local`**. It's sourced last, only if you own it, and is git-ignored,
+  so it never leaves the machine. Start from
   [`zsh/zshrc.local.example`](zsh/zshrc.local.example).
-- **git-delta** is wired into `~/.gitconfig` via an `include` — additive and
-  reversible; your existing git config is never rewritten.
-- **Passwords (`pass`)** — bring your own GPG key (`gpg --gen-key`), then
-  `pass init <key-id>`. `GPG_TTY` is already exported so it can prompt in your
-  terminal. `pw`/`pwc` copy secrets; `passf` fuzzy-picks one. It complements — not
-  replaces — the 1Password/Vault SSH-agent setup in [`SECURITY.md`](SECURITY.md).
-- **AI CLI (`fabric`)** — run `fabric --setup` once (stores config under
-  `~/.config/fabric`). Put provider API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
-  …) in `~/.zshrc.local`, **never** in the repo. Then pipe into patterns:
-  `cat notes.md | fsum`, `git diff | fexplain`, `ytsum <youtube-url>`.
-- **AI assistants** working here: see [`CLAUDE.md`](CLAUDE.md).
+- **The prompt** — [`starship/starship.toml`](starship/starship.toml) (colours, which
+  segments show, per-host accents).
+- **Aliases & shell options** — [`zsh/aliases.zsh`](zsh/aliases.zsh) and
+  [`zsh/.zshrc`](zsh/.zshrc). Because of the symlink model, editing these here changes
+  your live shell after `exec zsh`.
+- **The editor** — drop plugins in [`nvim/lua/plugins/`](nvim/lua/plugins/).
+
+> [!NOTE]
+> Rule of thumb: **anything secret or specific to one machine goes in
+> `~/.zshrc.local`; anything you want on every machine goes in the repo.**
+
+---
+
+## 🧯 Safety net (preview, inspect, back up, restore)
+
+`console` assumes you'll want to undo things, and makes that easy.
+
+| Want to… | Do |
+| -------- | -- |
+| **See what a run would change** | `./install.sh --dry-run` — prints everything, changes nothing |
+| **Check an existing setup** | `./install.sh --doctor` — tools, symlinks, font, git config |
+| **Undo the install** | `./uninstall.sh` — removes only symlinks into this repo + the git-delta include |
+| **Get your old configs back** | restore from the dated backup (below) |
+
+### The pre-change backup
+
+Before a **real** run touches anything, the installer snapshots every config it might
+replace — plus `~/.gitconfig` and `~/.zshenv` — into **one dated folder**:
+
+```text
+~/.local/state/console/backups/<timestamp>/
+```
+
+(`--dry-run` and `--doctor` never back up, because they change nothing.)
+
+**Restoring — one file:** remove the console symlink first (so you don't write
+*through* it), then copy your original back.
+
+```bash
+b=$(ls -1dt ~/.local/state/console/backups/*/ | head -1)   # newest backup
+ls -la "$b"                                                 # see what's saved
+rm -f ~/.zshrc && cp -a "$b/.zshrc" ~/.zshrc               # restore just this one
+exec zsh
+```
+
+**Restoring — everything:** uninstall first (that removes all the symlinks), then copy
+the whole backup back over the now-empty paths.
+
+```bash
+./uninstall.sh
+cp -a "$b/." ~/
+exec zsh
+```
+
+> [!WARNING]
+> Only copy a backup **after** the symlinks are gone (`rm` the single file, or run
+> `./uninstall.sh`). Copying onto a live symlink would overwrite the repo file it
+> points at.
+
+> [!NOTE]
+> The backup includes `~/.gitconfig` and `~/.zshenv` (the files the installer
+> *edits*). Restoring `.gitconfig` removes the delta include; or undo just that with
+> `git config --global --unset-all include.path '<repo>/git/delta.gitconfig'`. Every
+> run also appends an audit trail to `~/.local/state/console/install-<ts>.log`.
+
+---
+
+## 🔄 Updating
+
+Because your configs are symlinks into this repo, updating is a `git pull`:
+
+```bash
+cd ~/code/console && git pull && exec zsh   # add ./install.sh if a new tool was added
+```
+
+| Update | Command |
+| ------ | ------- |
+| zsh plugins | `zinit self-update && zinit update --all` |
+| LazyVim plugins | open `nvim` → `:Lazy update` (then commit `nvim/lazy-lock.json`) |
+| CLI tools | your package manager (`apt upgrade`, `brew upgrade`, …) |
+| tldr pages | `tldr --update` |
 
 ---
 
@@ -375,12 +666,12 @@ Built to run on servers and privileged boxes — full details in
 | **Secrets in history** | leading-space commands aren't saved (`HIST_IGNORE_SPACE`) |
 | **Secrets in the repo** | machine config lives in git-ignored `~/.zshrc.local` |
 | **Completion injection** | `compinit -i` keeps the security check, skips insecure dirs (never `-C`) |
-| **Supply chain** | packages first; `curl \| sh` only a labelled fallback; lazygit/neovim/carapace binaries **SHA256-verified** |
+| **Supply chain** | packages first; `curl \| sh` only a labelled fallback; lazygit/neovim/carapace/fabric binaries **SHA256-verified** |
 | **Reproducibility** | `nvim/lazy-lock.json`, `ZINIT_PIN`, `--offline`, `scripts/vendor-plugins.sh` |
 | **Auditability** | every run logs to `~/.local/state/console/install-<ts>.log` |
-| **Reversibility** | one dated pre-change backup (`~/.local/state/console/backups/<ts>/`) + `./uninstall.sh` |
+| **Reversibility** | one dated pre-change backup + `./uninstall.sh` |
 | **External key agents** | point `SSH_AUTH_SOCK` at 1Password / Vault from `~/.zshrc.local` |
-| **AI / password secrets** | `pass` uses **your** GPG key; `fabric` API keys live in `~/.zshrc.local`, never the repo |
+| **AI / password secrets** | `pass` uses **your** GPG key; `fabric` keys live in `~/.zshrc.local` |
 
 </details>
 
@@ -390,59 +681,27 @@ Built to run on servers and privileged boxes — full details in
 
 ---
 
-## 🔄 Updating
-
-Because the configs are symlinks into this repo, updating is a pull:
-
-```bash
-cd ~/code/console && git pull && exec zsh   # add ./install.sh if a new tool was added
-```
-
-| Update | Command |
-| ------ | ------- |
-| zsh plugins | `zinit self-update && zinit update --all` |
-| LazyVim plugins | `nvim` → `:Lazy update` (commit `nvim/lazy-lock.json`) |
-| CLI tools | your package manager (`apt upgrade`, `brew upgrade`, …) |
-| tldr pages | `tldr --update` |
-
----
-
-## 🗑️ Uninstall
-
-```bash
-./uninstall.sh                                 # remove the symlinks + git-delta include
-# optional: restore configs from the newest pre-change backup (uninstall.sh prints the path)
-cp -a ~/.local/state/console/backups/<ts>/.zshrc ~/.zshrc
-exec zsh
-```
-It only removes symlinks that point into this repo (real files are left alone) and
-doesn't uninstall packages. Your originals live in the dated backup folder from the
-install run.
-
----
-
 ## 🗂️ Repo layout
 
 ```text
 .
-├── install.sh              # idempotent bootstrap (Linux + macOS)
+├── install.sh              # idempotent bootstrap (Linux + macOS) — also --dry-run / --doctor
 ├── uninstall.sh            # reverse the symlinks + git include
 ├── zsh/
-│   ├── .zshrc              # main config          ->  ~/.zshrc
+│   ├── .zshrc              # main shell config      ->  ~/.zshrc
 │   ├── aliases.zsh         # aliases (sourced by .zshrc)
 │   └── zshrc.local.example # template for ~/.zshrc.local
-├── starship/starship.toml  # prompt               ->  ~/.config/starship.toml
-├── nvim/                   # LazyVim config        ->  ~/.config/nvim
-├── lazygit/config.yml      # lazygit (delta)       ->  ~/.config/lazygit/config.yml
-├── tmux/tmux.conf          # tmux config           ->  ~/.config/tmux/tmux.conf
-├── alacritty/alacritty.toml # terminal preset      ->  ~/.config/alacritty/alacritty.toml
+├── starship/starship.toml  # the prompt             ->  ~/.config/starship.toml
+├── nvim/                   # LazyVim config          ->  ~/.config/nvim
+├── lazygit/config.yml      # lazygit (uses delta)    ->  ~/.config/lazygit/config.yml
+├── tmux/tmux.conf          # tmux config             ->  ~/.config/tmux/tmux.conf
+├── alacritty/alacritty.toml # terminal preset        ->  ~/.config/alacritty/alacritty.toml
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
-│   ├── tmux-sessionizer.sh # fzf project switcher  ->  ~/.local/bin/tmux-sessionizer
-│   ├── ci-extras-check.sh  # CI: assert pass/fabric/sessionizer/alacritty installed
-│   ├── ci-uninstall-check.sh # CI: assert uninstall.sh removes every symlink
-│   └── vendor-plugins.sh   # pre-seed plugins for offline hosts
-├── .github/workflows/ci.yml    # shellcheck + lint + minimal/extras/uninstall multi-distro smoke
+│   ├── tmux-sessionizer.sh # fzf project switcher    ->  ~/.local/bin/tmux-sessionizer
+│   ├── vendor-plugins.sh   # pre-seed plugins for offline hosts
+│   └── ci-*.sh             # CI: assert installs + uninstall reversibility
+├── .github/workflows/ci.yml    # shellcheck + multi-distro install/uninstall smoke tests
 ├── CLAUDE.md · SECURITY.md · ROADMAP.md
 └── README.md
 ```
@@ -451,6 +710,8 @@ install run.
 
 <div align="center">
 
-Built to be cloned. See [`ROADMAP.md`](ROADMAP.md) for what's done and what's next.
+**Built to be cloned.** &nbsp;·&nbsp; New here? Re-read the
+**[mental model](#-never-used-a-terminal-like-this-2-minute-mental-model)**.
+&nbsp;·&nbsp; What's next? See [`ROADMAP.md`](ROADMAP.md).
 
 </div>
