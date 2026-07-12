@@ -59,9 +59,10 @@ exec zsh
 ```
 
 The installer is **idempotent** (safe to re-run). It detects your package manager,
-installs missing tools, backs up any existing `~/.zshrc` → `~/.zshrc.pre-console.<ts>`,
-then symlinks this repo into place. The first launch of `zsh` (and of `nvim`)
-installs plugins once.
+installs missing tools, and — **before touching anything** — snapshots every config
+it may replace into one dated folder
+(`~/.local/state/console/backups/<ts>/`), then symlinks this repo into place. The
+first launch of `zsh` (and of `nvim`) installs plugins once.
 
 > [!TIP]
 > Preview a run without changing anything — `./install.sh --dry-run`.
@@ -377,7 +378,7 @@ Built to run on servers and privileged boxes — full details in
 | **Supply chain** | packages first; `curl \| sh` only a labelled fallback; lazygit/neovim/carapace binaries **SHA256-verified** |
 | **Reproducibility** | `nvim/lazy-lock.json`, `ZINIT_PIN`, `--offline`, `scripts/vendor-plugins.sh` |
 | **Auditability** | every run logs to `~/.local/state/console/install-<ts>.log` |
-| **Reversibility** | `~/.zshrc.pre-console.<ts>` backups + `./uninstall.sh` |
+| **Reversibility** | one dated pre-change backup (`~/.local/state/console/backups/<ts>/`) + `./uninstall.sh` |
 | **External key agents** | point `SSH_AUTH_SOCK` at 1Password / Vault from `~/.zshrc.local` |
 | **AI / password secrets** | `pass` uses **your** GPG key; `fabric` API keys live in `~/.zshrc.local`, never the repo |
 
@@ -410,11 +411,13 @@ cd ~/code/console && git pull && exec zsh   # add ./install.sh if a new tool was
 
 ```bash
 ./uninstall.sh                                 # remove the symlinks + git-delta include
-mv ~/.zshrc.pre-console.<timestamp> ~/.zshrc   # optional: restore your previous zshrc
+# optional: restore configs from the newest pre-change backup (uninstall.sh prints the path)
+cp -a ~/.local/state/console/backups/<ts>/.zshrc ~/.zshrc
 exec zsh
 ```
 It only removes symlinks that point into this repo (real files are left alone) and
-doesn't uninstall packages.
+doesn't uninstall packages. Your originals live in the dated backup folder from the
+install run.
 
 ---
 

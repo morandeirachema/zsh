@@ -22,6 +22,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
+BACKUP_DIR="$LOGDIR/backups/$STAMP"    # consolidated snapshot of configs this run replaces
 NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
 
 for a in "$@"; do
@@ -229,6 +230,39 @@ pkg_install() {
   esac
 }
 
+# --- snapshot: before a REAL run, copy the configs we may replace into one dated
+#     backup folder, so a bad config / error / change of mind is one restore away.
+#     Skips paths that are already OUR symlinks (nothing of yours to save). ---
+snapshot() {
+  dry && return 0
+  local src rel dest tgt any=0
+  local paths=(
+    "$HOME/.zshrc"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/.zshrc"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/lazygit/config.yml"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+    "$HOME/.local/bin/tmux-sessionizer"
+    "$HOME/.gitconfig"                    # edited (delta include)
+    "$HOME/.zshenv"                       # edited (--xdg ZDOTDIR)
+  )
+  for src in "${paths[@]}"; do
+    [ -e "$src" ] || [ -L "$src" ] || continue
+    if [ -L "$src" ]; then
+      tgt="$(readlink "$src")"
+      case "$tgt" in "$REPO_DIR"/*) continue ;; esac   # already ours — skip
+    fi
+    rel="${src#"$HOME"/}"; dest="$BACKUP_DIR/$rel"
+    mkdir -p "$(dirname "$dest")"
+    if cp -a "$src" "$dest" 2>/dev/null; then any=1; log "backed up $src -> $dest"
+    else warn "could not back up $src"; fi
+  done
+  if [ "$any" -eq 1 ]; then ok "Backed up your current config → $BACKUP_DIR"
+  else info "No existing config to back up (fresh setup)."; fi
+}
+
 # --- doctor: report what's installed / linked, then exit (no changes) ---
 doctor() {
   local cfg="${XDG_CONFIG_HOME:-$HOME/.config}" issues=0
@@ -304,6 +338,9 @@ if [ "$DOCTOR" -eq 1 ]; then set +e; doctor; exit 0; fi
 info "Repo:            $REPO_DIR"
 info "Package manager: ${PM:-none detected}"
 [ "$OFFLINE" -eq 1 ] && info "Offline mode: no internet fetches (packages assumed from your mirror)."
+
+# Back up whatever is there BEFORE touching anything (real runs only).
+snapshot
 
 if [ "$PM" = apt ]; then
   # shellcheck disable=SC2086  # $SUDO may be empty
@@ -490,15 +527,23 @@ if [ "$NO_FONT" -eq 0 ]; then
   fi
 fi
 
-# --- symlinks (backs up any existing real file) ---
+# --- symlinks. Existing real files were already saved by snapshot() into the
+#     consolidated backup, so we can replace them; if a snapshot is somehow
+#     missing, fall back to an in-place rename rather than lose data. ---
 link() {
-  local src="$1" dst="$2"
+  local src="$1" dst="$2" rel bak
   dry && { info "[dry-run] link $dst → $src"; return 0; }
   mkdir -p "$(dirname "$dst")"
-  if   [ -L "$dst" ]; then rm -f "$dst"
+  if [ -L "$dst" ]; then
+    rm -f "$dst"                                  # a symlink — nothing of yours to preserve
   elif [ -e "$dst" ]; then
-    warn "backing up $dst -> $dst.pre-console.$STAMP"
-    mv "$dst" "$dst.pre-console.$STAMP"
+    rel="${dst#"$HOME"/}"; bak="$BACKUP_DIR/$rel"
+    if [ -e "$bak" ] || [ -L "$bak" ]; then
+      rm -rf "$dst"                               # already in the backup → safe to replace
+    else
+      warn "no snapshot for $dst — keeping an in-place copy at $dst.pre-console.$STAMP"
+      mv "$dst" "$dst.pre-console.$STAMP"
+    fi
   fi
   ln -s "$src" "$dst"; ok "linked $dst"
 }
@@ -577,6 +622,7 @@ else
   info "First zsh launch auto-installs zinit + plugins (one-time, ~10s)."
   [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ] && \
     info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."
+  [ -d "$BACKUP_DIR" ] && info "Previous config backed up in: $BACKUP_DIR"
   info "Audit log: $LOGFILE"
 fi
 

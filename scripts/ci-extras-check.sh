@@ -43,6 +43,14 @@ fi
 # --- interactive zsh loads cleanly with all the new bits ---
 zsh -ic 'exit 0' >/dev/null 2>&1 && ok "interactive zsh loads" || bad "interactive zsh failed to load"
 
+# --- consolidated pre-change backup captured the pre-seeded ~/.zshrc ---
+# (the extras job writes PRE-INSTALL-MARKER to ~/.zshrc before ./install.sh)
+if grep -rqs "PRE-INSTALL-MARKER" "$HOME/.local/state/console/backups/" 2>/dev/null; then
+  ok "pre-change backup captured the old ~/.zshrc"
+else
+  bad "pre-change backup did not capture the old ~/.zshrc"
+fi
+
 # --- alacritty: config symlinked (hard); binary is a soft check (GUI pkg) ---
 [ -L "$HOME/.config/alacritty/alacritty.toml" ] && ok "alacritty.toml symlinked" || bad "alacritty.toml not symlinked"
 command -v alacritty >/dev/null && ok "alacritty installed" || note "alacritty binary not installed (package missing?) — non-fatal"

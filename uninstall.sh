@@ -45,9 +45,19 @@ fi
 
 echo
 ok "Uninstalled. Packages and plugins were left in place."
-info "Restore your previous shell (if you have a backup):"
+info "Restore your previous config from the newest console backup, if any:"
+BACKUPS="${XDG_STATE_HOME:-$HOME/.local/state}/console/backups"
+if [ -d "$BACKUPS" ]; then
+  # shellcheck disable=SC2012  # newest backup dir; ls -t is fine for a hint
+  latest="$(ls -1dt "$BACKUPS"/*/ 2>/dev/null | head -1)"
+  if [ -n "$latest" ]; then
+    info "  newest: $latest"
+    info "  e.g.:   cp -a \"${latest}.zshrc\" ~/.zshrc   # plus anything else under it"
+  else info "  (none found under $BACKUPS)"; fi
+else info "  (none found under $BACKUPS)"; fi
+# Legacy in-place backups from older installs, if present.
 # shellcheck disable=SC2012
-ls -d "$HOME"/.zshrc.pre-console.* 2>/dev/null | sed 's/^/    mv & ~\/.zshrc/' || \
-  info "  (no ~/.zshrc.pre-console.* backup found)"
+ls -d "$HOME"/.zshrc.pre-console.* >/dev/null 2>&1 && \
+  info "  legacy: $HOME/.zshrc.pre-console.*  (mv one back to ~/.zshrc)"
 info "Then reload:  exec zsh   (or restart your terminal)"
 exit 0

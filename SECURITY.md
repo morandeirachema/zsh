@@ -64,9 +64,14 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   installed from a **SHA256-verified** GitHub release, same as lazygit/neovim.
 
 ## Undo
-`./uninstall.sh` removes only the symlinks that point into this repo and the
-git-delta include; it never deletes real files or packages. `install.sh` writes an
-audit trail of everything it changed to `~/.local/state/console/install-<ts>.log`.
+Before a real run touches anything, `install.sh` copies every config it may replace
+(plus `~/.gitconfig` and `~/.zshenv`) into one dated folder
+`~/.local/state/console/backups/<ts>/` — so a bad config, an error mid-run, or a
+change of mind is a single `cp -a` away. `--dry-run` and `--doctor` never back up
+(they change nothing). `./uninstall.sh` then removes only the symlinks that point
+into this repo and the git-delta include; it never deletes real files or packages,
+and it prints the newest backup to restore from. `install.sh` also writes an audit
+trail of everything it changed to `~/.local/state/console/install-<ts>.log`.
 
 ## Reporting
 This repo has no formal disclosure process; open an issue on
