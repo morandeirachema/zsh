@@ -66,7 +66,7 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
 ## Undo
 Before a real run touches anything, `install.sh` copies every config it may replace
 (plus `~/.gitconfig` and `~/.zshenv`) into one dated folder
-`~/.local/state/console/backups/<ts>/` — so a bad config, an error mid-run, or a
+`~/backup/zsh/<ts>/` — so a bad config, an error mid-run, or a
 change of mind is a single `cp -a` away. `--dry-run` and `--doctor` never back up
 (they change nothing). `./uninstall.sh` then removes only the symlinks that point
 into this repo and the git-delta include; it never deletes real files or packages,

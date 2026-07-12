@@ -22,7 +22,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
-BACKUP_DIR="$LOGDIR/backups/$STAMP"    # consolidated snapshot of configs this run replaces
+BACKUP_DIR="$HOME/backup/zsh/$STAMP"   # consolidated snapshot of configs this run replaces (visible path)
 NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
 
 for a in "$@"; do

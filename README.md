@@ -596,7 +596,7 @@ Before a **real** run touches anything, the installer snapshots every config it 
 replace — plus `~/.gitconfig` and `~/.zshenv` — into **one dated folder**:
 
 ```text
-~/.local/state/console/backups/<timestamp>/
+~/backup/zsh/<timestamp>/
 ```
 
 (`--dry-run` and `--doctor` never back up, because they change nothing.)
@@ -605,7 +605,7 @@ replace — plus `~/.gitconfig` and `~/.zshenv` — into **one dated folder**:
 *through* it), then copy your original back.
 
 ```bash
-b=$(ls -1dt ~/.local/state/console/backups/*/ | head -1)   # newest backup
+b=$(ls -1dt ~/backup/zsh/*/ | head -1)   # newest backup
 ls -la "$b"                                                 # see what's saved
 rm -f ~/.zshrc && cp -a "$b/.zshrc" ~/.zshrc               # restore just this one
 exec zsh

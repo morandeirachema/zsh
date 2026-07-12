@@ -46,7 +46,7 @@ fi
 echo
 ok "Uninstalled. Packages and plugins were left in place."
 info "Restore your previous config from the newest console backup, if any:"
-BACKUPS="${XDG_STATE_HOME:-$HOME/.local/state}/console/backups"
+BACKUPS="$HOME/backup/zsh"
 if [ -d "$BACKUPS" ]; then
   # shellcheck disable=SC2012  # newest backup dir; ls -t is fine for a hint
   latest="$(ls -1dt "$BACKUPS"/*/ 2>/dev/null | head -1)"
