@@ -156,3 +156,43 @@ if command -v ss >/dev/null; then
 else
   alias ports='lsof -nP -iTCP -sTCP:LISTEN'
 fi
+
+# --- ssh port-forwarding helpers (tunnels) ---------------------------------
+# https://www.ssh.com/academy/ssh/tunneling
+# All run in the foreground with a keep-alive; press Ctrl-C to close the tunnel
+# (open it in a tmux pane if you want to keep using this shell). Put host
+# entries in ~/.ssh/config so <host> can be a short alias — see the README.
+if command -v ssh >/dev/null; then
+  # fwd — LOCAL forward: reach a remote service at your OWN localhost.
+  #   fwd <host> <port>                     localhost:<port>  -> host:localhost:<port>
+  #   fwd <host> <lport> <rport>            localhost:<lport> -> host:localhost:<rport>
+  #   fwd <host> <lport> <rhost> <rport>    localhost:<lport> -> <rhost>:<rport> (via host)
+  fwd() {
+    emulate -L zsh
+    local host="$1" lport="$2" rhost="localhost" rport
+    [[ -z "$host" || -z "$lport" ]] && { print -u2 "usage: fwd <host> <lport> [rport] | <lport> <rhost> <rport>"; return 2; }
+    if [[ -n "$4" ]]; then rhost="$3"; rport="$4"
+    elif [[ -n "$3" ]]; then rport="$3"
+    else rport="$lport"; fi
+    print -P "%F{cyan}→%f localhost:$lport  ⇒  $rhost:$rport  (via $host) — Ctrl-C to stop"
+    ssh -N -o ServerAliveInterval=60 -L "${lport}:${rhost}:${rport}" "$host"
+  }
+  # rfwd — REMOTE forward: expose YOUR local service on the remote host.
+  #   rfwd <host> <rport> [lport]           host:<rport> -> your localhost:<lport|rport>
+  rfwd() {
+    emulate -L zsh
+    local host="$1" rport="$2" lport="${3:-$2}"
+    [[ -z "$host" || -z "$rport" ]] && { print -u2 "usage: rfwd <host> <rport> [lport]"; return 2; }
+    print -P "%F{cyan}→%f $host:$rport  ⇒  your localhost:$lport — Ctrl-C to stop"
+    ssh -N -o ServerAliveInterval=60 -R "${rport}:localhost:${lport}" "$host"
+  }
+  # socks — DYNAMIC forward: a SOCKS5 proxy through <host> (point apps at localhost:<port>).
+  #   socks <host> [port=1080]
+  socks() {
+    emulate -L zsh
+    local host="$1" port="${2:-1080}"
+    [[ -z "$host" ]] && { print -u2 "usage: socks <host> [socks-port=1080]"; return 2; }
+    print -P "%F{cyan}→%f SOCKS5 proxy on localhost:$port  (via $host) — Ctrl-C to stop"
+    ssh -N -o ServerAliveInterval=60 -D "${port}" "$host"
+  }
+fi

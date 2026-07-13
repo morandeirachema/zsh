@@ -179,6 +179,7 @@ Read top to bottom the first time, or jump to what you need:
 **[prompt](#-the-prompt-reading-your-surroundings)** ·
 **[finding things](#-finding-things-fast)** ·
 **[tmux](#-tmux-never-lose-your-work)** ·
+**[SSH tunnels](#-ssh-tunnels-port-forwarding)** ·
 **[git](#-git-without-the-pain)** ·
 **[Neovim](#-neovim-modal-editing-gently)** ·
 **[AI & passwords](#-ai-and-passwords)**
@@ -348,6 +349,46 @@ go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). S
 > every 15 min and restore on start (`prefix Ctrl-s` / `prefix Ctrl-r` to do it by
 > hand). Pane *contents* are deliberately **not** saved, so scrollback secrets never
 > hit disk.
+
+---
+
+### 🔌 SSH tunnels (port forwarding)
+
+`ssh` does more than give you a remote shell — it can **tunnel network traffic**
+through the same encrypted connection, letting you reach a service that's otherwise
+unreachable (a database bound to a server's localhost, a UI behind a firewall, a port
+inside a container). `console` ships three one-word helpers so you never hand-type the
+flags:
+
+```text
+fwd    (local   -L)  →  pull a remote service to your machine
+rfwd   (remote  -R)  →  expose one of your local services on the remote host
+socks  (dynamic -D)  →  a SOCKS5 proxy through a host (a mini-VPN for your browser)
+```
+
+| Helper | What it does | Example |
+| ------ | ------------ | ------- |
+| `fwd <host> <port>` | your `localhost:<port>` → the host's `localhost:<port>` | `fwd db01 5432` — reach Postgres on `db01` at your own `localhost:5432` |
+| `fwd <host> <lport> <rport>` | same, but a different **local** port | `fwd db01 15432 5432` |
+| `fwd <host> <lport> <rhost> <rport>` | forward to a third host reachable **from** `<host>` | `fwd bastion 8080 10.0.0.9 80` |
+| `rfwd <host> <rport> [lport]` | the host's `localhost:<rport>` → **your** `localhost:<lport>` | `rfwd server 9000 3000` — share your local dev server |
+| `socks <host> [port]` | a SOCKS5 proxy on `localhost:<port>` (default 1080) | `socks jump` — point your browser at `localhost:1080` |
+
+Each runs in the **foreground** with a keep-alive and prints what it's doing; press
+**`Ctrl-C`** to close the tunnel. Want to keep using this shell? Open the tunnel in a
+**tmux pane** (`prefix |`).
+
+> [!TIP]
+> **`<host>` can be a short name** from your `~/.ssh/config` (so `fwd db01 5432` "just
+> works"). Keep machine-specific hosts **out of the repo**: add one line to the top of
+> `~/.ssh/config` —
+>
+> ```text
+> Include ~/.ssh/config.local
+> ```
+>
+> — and put your `Host` entries in `~/.ssh/config.local` (`chmod 600`), which you
+> never commit. Same idea as `~/.zshrc.local`.
 
 ---
 
@@ -555,6 +596,14 @@ Tool-specific aliases only exist when the tool is installed.
 | `please` | re-run the last command with `sudo` |
 | `myip` | your public IP |
 | `ports` | listening ports (`ss` Linux / `lsof` macOS) |
+
+**SSH tunnels** *(see [SSH tunnels](#-ssh-tunnels-port-forwarding))*
+
+| Alias | Command |
+| ----- | ------- |
+| `fwd <host> <port>` | local forward — reach a remote service at your `localhost` |
+| `rfwd <host> <rport> [lport]` | remote forward — expose your local service on the host |
+| `socks <host> [port]` | dynamic forward — a SOCKS5 proxy through the host |
 
 </details>
 

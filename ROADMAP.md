@@ -92,5 +92,6 @@ Ideas taken from three Mischa van den Burg videos (see
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - Pin release-binary versions (fabric/lazygit/neovim/carapace fetch `latest`) for
   reproducibility, mirroring `ZINIT_PIN`.
-- Video-ideas P2 remaining: SSH port-forward helpers · Synology NAS sync pattern
-  (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)). Alacritty is done.
+- Video-ideas P2 remaining: **Synology NAS sync** pattern (see
+  [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)). Alacritty and the SSH port-forward
+  helpers (`fwd`/`rfwd`/`socks` + `~/.ssh/config.local` include pattern) are done.

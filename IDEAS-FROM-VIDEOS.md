@@ -29,7 +29,7 @@ client) and is **out of scope** for a portable shell-dotfiles repo — see the l
 | 2 | **tmux-sessionizer** — fzf-jump to a project as a tmux session | 1, 3 | High | S | **P1 · ✅ done** |
 | 3 | **pass** — GPG-encrypted Unix password store | 2, 3 | High | S–M | **P1 · ✅ done** |
 | 4 | **Deeper fzf previews** — bat/eza in Ctrl-T / Alt-C / fzf-tab | 3 | High | S | **P1 · ✅ done** |
-| 5 | **SSH workflow** — port-forward helpers + `config.local` include | 1, 3 | Med | S | P2 |
+| 5 | **SSH workflow** — port-forward helpers + `config.local` include | 1, 3 | Med | S | **P2 · ✅ done** |
 | 6 | **Alacritty config** — Catppuccin + JetBrainsMono | 1 | Med | M | **P2 · ✅ done** |
 | 7 | **NAS sync pattern** — pass-store / backups → Synology NAS | 2 | Med | S | P2 |
 | 8 | **Notes helper** — Zettelkasten / Johnny-Decimal capture | 1, 2 | Low | S | P3 |
@@ -91,11 +91,13 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 
 ## P2 — nice, but narrower payoff
 
-### 5. SSH workflow helpers
+### 5. SSH workflow helpers — ✅ done (2026-07-13)
 - Video 3 spends a chapter on "SSH beyond logging in" + port-forwarding into remote containers.
-- **Maps to us:** a few guarded aliases (e.g. a local-forward helper) plus a documented
-  `Include ~/.ssh/config.local` pattern so host entries stay machine-specific and out of the repo
-  (same philosophy as `~/.zshrc.local`). Keep it doc + example; never commit real hosts.
+- **Shipped:** three guarded zsh helpers in `zsh/aliases.zsh` — `fwd` (local `-L`), `rfwd` (remote
+  `-R`), `socks` (dynamic `-D` SOCKS proxy) — each foreground with a keep-alive (`ServerAliveInterval=60`)
+  and a status line; bad args exit 2. Documented the `Include ~/.ssh/config.local` pattern (host entries
+  stay machine-specific, `chmod 600`, never committed — same philosophy as `~/.zshrc.local`). README has a
+  guided-tour section; SECURITY.md notes tunnels bind localhost by default (no `GatewayPorts`).
 
 ### 6. Alacritty config — ✅ done (2026-07-12)
 - Video 1's terminal is Alacritty + zsh + tmux.

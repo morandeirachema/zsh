@@ -50,6 +50,11 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   `SSH_AUTH_SOCK` at the agent's socket from `~/.zshrc.local` — e.g. 1Password
   `export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"`. This keeps private keys in
   the vault/HSM (never on disk) — the PAM-friendly setup.
+- **Port-forward helpers (`fwd`/`rfwd`/`socks`)** just wrap `ssh -N -L/-R/-D`; they
+  add no keys or trust changes and bind to **localhost** by default (a tunnel is only
+  reachable from the machine that opened it — no `GatewayPorts`). Host aliases belong
+  in `~/.ssh/config.local` (`chmod 600`, git-ignored, pulled in via an `Include` line),
+  never in the repo — same rule as `~/.zshrc.local`.
 
 ## Passwords & AI keys
 - **`pass`** encrypts every secret to **your own GPG key** — nothing is installed
