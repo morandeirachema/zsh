@@ -20,6 +20,10 @@ bin="$HOME/.local/bin/tmux-sessionizer"
 # --- tmux-sessionizer: symlinked, executable, runnable ---
 [ -L "$bin" ] && ok "tmux-sessionizer symlinked" || bad "tmux-sessionizer symlink missing"
 [ -x "$bin" ] && ok "tmux-sessionizer executable" || bad "tmux-sessionizer not executable"
+# nas-sync symlinked + its "no NAS_DEST" guard exits non-zero cleanly (not a crash)
+[ -L "$HOME/.local/bin/nas-sync" ] && ok "nas-sync symlinked" || bad "nas-sync symlink missing"
+( unset NAS_DEST NAS_SYNC_PATHS; "$HOME/.local/bin/nas-sync" </dev/null >/dev/null 2>&1 ); ec=$?
+[ "$ec" -ge 1 ] && [ "$ec" -le 2 ] && ok "nas-sync guard exits $ec without config" || bad "nas-sync misbehaved (exit $ec)"
 if [ -x "$bin" ]; then
   "$bin" </dev/null >/dev/null 2>&1; ec=$?
   # 0 = fzf ran but no TTY/selection; 1 = fzf-absent guard. Anything else = crash.

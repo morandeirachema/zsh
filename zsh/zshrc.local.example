@@ -18,6 +18,16 @@
 # Tint the starship OS pill red on prod boxes so you never mistake them.
 # export STARSHIP_CONFIG="$HOME/.config/starship.prod.toml"   # a red-accent variant
 
+# --- NAS backup (nas-sync) ---
+# Point nas-sync at a destination, then run `nas-sync` (or `nas-sync -n` to preview).
+# A Synology NAS usually speaks SMB/CIFS only — mount the share, sync to the mount:
+#   printf 'username=USER\npassword=PASS\n' > ~/.nas-cred && chmod 600 ~/.nas-cred
+#   sudo mount -t cifs //NAS-IP/SHARE /mnt/nas \
+#     -o credentials=$HOME/.nas-cred,uid=$(id -u),gid=$(id -g),vers=3.0
+#   export NAS_DEST="/mnt/nas/backups/$(hostname)"
+# ...or, if your NAS allows ssh/rsync:  export NAS_DEST="user@NAS-IP:/volume1/backups"
+# export NAS_SYNC_PATHS="$HOME/backup $HOME/.password-store"   # optional (these are the defaults)
+
 # --- Local PATH / work aliases ---
 # export PATH="$HOME/tools/bin:$PATH"
 # alias vpn='sudo openvpn --config ~/work/vpn.conf'

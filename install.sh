@@ -397,6 +397,8 @@ if [ "$MINIMAL" -eq 0 ]; then
   have yq || { info "Installing yq…"; pkg_install yq || warn "yq not packaged — see https://github.com/mikefarah/yq"; }
   # direnv — per-directory env (.envrc, with allowlist)
   have direnv || { info "Installing direnv…"; pkg_install direnv || warn "direnv failed — see https://direnv.net"; }
+  # rsync — used by the nas-sync backup helper (usually already present)
+  have rsync || { info "Installing rsync…"; pkg_install rsync || warn "rsync failed"; }
   # carapace — unified completions for kubectl/aws/docker/terraform/gh, etc.
   if ! have carapace; then
     info "Installing carapace…"
@@ -572,6 +574,8 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 # tmux-sessionizer helper on PATH (bound to prefix+f in tmux.conf)
 [ "$MINIMAL" -eq 0 ] && { dry || mkdir -p "$HOME/.local/bin"; \
   link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
+# nas-sync helper on PATH (rsync backups/pass → a NAS; set NAS_DEST in ~/.zshrc.local)
+[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/scripts/nas-sync.sh" "$HOME/.local/bin/nas-sync"
 # alacritty config (client-side terminal; skipped by --minimal/--server/--no-alacritty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
   link "$REPO_DIR/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"

@@ -31,7 +31,7 @@ client) and is **out of scope** for a portable shell-dotfiles repo — see the l
 | 4 | **Deeper fzf previews** — bat/eza in Ctrl-T / Alt-C / fzf-tab | 3 | High | S | **P1 · ✅ done** |
 | 5 | **SSH workflow** — port-forward helpers + `config.local` include | 1, 3 | Med | S | **P2 · ✅ done** |
 | 6 | **Alacritty config** — Catppuccin + JetBrainsMono | 1 | Med | M | **P2 · ✅ done** |
-| 7 | **NAS sync pattern** — pass-store / backups → Synology NAS | 2 | Med | S | P2 |
+| 7 | **NAS sync pattern** — pass-store / backups → Synology NAS | 2 | Med | S | **P2 · ✅ done** |
 | 8 | **Notes helper** — Zettelkasten / Johnny-Decimal capture | 1, 2 | Low | S | P3 |
 | 9 | **chezmoi** — dotfile manager instead of symlinks | 1 | Low | L | Evaluate → likely decline |
 
@@ -107,12 +107,15 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
   Removes the manual "set your terminal font" step. TOML validated in CI; symlink asserted by the
   `extras` job. Other terminals (e.g. kitty) still work — nothing depends on Alacritty.
 
-### 7. Synology NAS sync pattern
-- Video 2 syncs the password store / files to a Synology NAS. **We already know the user's NAS**
-  (192.168.1.211, SMB — see the `nas-backup-target` memory), so this is a natural tie-in.
-- **Maps to us:** a documented, machine-specific pattern (in `~/.zshrc.local` + a `scripts/` helper)
-  to rsync the `pass` store or install backups to the NAS. Keep the host/paths out of the tracked
-  files — example only.
+### 7. Synology NAS sync pattern — ✅ done (2026-07-13)
+- Video 2 syncs the password store / files to a Synology NAS. The user's NAS (192.168.1.211) speaks
+  **SMB/CIFS only** — SSH/NFS/rsync-daemon are closed (see the `nas-backup-target` memory), so the path is
+  mount-then-rsync-to-the-mount, not rsync-over-ssh.
+- **Shipped:** `scripts/nas-sync.sh` (symlinked to `~/.local/bin/nas-sync`) rsyncs `$NAS_SYNC_PATHS`
+  (default `~/backup` + `~/.password-store`) to a configurable `$NAS_DEST` — transport-agnostic (a mount
+  path OR an ssh target). Additive (no `--delete`), `-n` dry-run, guards on missing rsync/NAS_DEST.
+  `zshrc.local.example` documents the CIFS-mount recipe (placeholders); README + SECURITY cover it; CI
+  asserts the symlink + guard on ubuntu/fedora/arch. Host/creds stay per-machine (never the repo).
 
 ---
 

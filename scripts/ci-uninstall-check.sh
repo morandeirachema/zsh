@@ -18,6 +18,7 @@ for p in \
   "$cfg/starship.toml" \
   "$cfg/tmux/tmux.conf" \
   "$HOME/.local/bin/tmux-sessionizer" \
+  "$HOME/.local/bin/nas-sync" \
   "$cfg/alacritty/alacritty.toml" \
   "$cfg/lazygit/config.yml"; do
   # -L catches a leftover (even dangling) symlink; -e catches any leftover file.

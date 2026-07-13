@@ -596,6 +596,7 @@ Tool-specific aliases only exist when the tool is installed.
 | `please` | re-run the last command with `sudo` |
 | `myip` | your public IP |
 | `ports` | listening ports (`ss` Linux / `lsof` macOS) |
+| `nas-sync [-n]` | rsync backups + `pass` store → your NAS (set `NAS_DEST`; [details](#ship-backups-to-a-nas)) |
 
 **SSH tunnels** *(see [SSH tunnels](#-ssh-tunnels-port-forwarding))*
 
@@ -679,6 +680,29 @@ exec zsh
 > *edits*). Restoring `.gitconfig` removes the delta include; or undo just that with
 > `git config --global --unset-all include.path '<repo>/git/delta.gitconfig'`. Every
 > run also appends an audit trail to `~/.local/state/console/install-<ts>.log`.
+
+### Ship backups to a NAS
+
+`nas-sync` rsyncs your backup folder (and your `pass` store, if present) to a NAS or
+any rsync target — **additive**, it never deletes on the destination. Point it at a
+destination once in `~/.zshrc.local`:
+
+```bash
+# A Synology NAS usually speaks SMB/CIFS only — mount the share, then sync to the mount:
+sudo mount -t cifs //NAS-IP/SHARE /mnt/nas -o credentials=$HOME/.nas-cred,uid=$(id -u),gid=$(id -g),vers=3.0
+export NAS_DEST="/mnt/nas/backups/$(hostname)"
+# ...or an ssh target if your NAS allows it:  export NAS_DEST="user@NAS-IP:/volume1/backups"
+```
+
+```bash
+nas-sync         # sync ~/backup (+ ~/.password-store) → NAS_DEST
+nas-sync -n      # preview only (rsync --dry-run)
+```
+
+> [!TIP]
+> Schedule it from cron, and/or override the sources:
+> `NAS_SYNC_PATHS="$HOME/backup $HOME/notes" nas-sync`. Your `pass` store is
+> GPG-encrypted, so it's safe to keep on the NAS.
 
 ---
 

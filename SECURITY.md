@@ -68,6 +68,12 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   space so it never lands in `~/.zsh_history` (`HIST_IGNORE_SPACE`). The binary is
   installed from a **SHA256-verified** GitHub release, same as lazygit/neovim.
 
+## NAS backup (nas-sync)
+- `nas-sync` only ever runs `rsync` (additive — no `--delete`); it doesn't store or
+  transmit credentials itself. The destination (`NAS_DEST`) and any SMB credentials
+  live **per-machine** in `~/.zshrc.local` / `~/.nas-cred` (`chmod 600`), never the
+  repo. Your `pass` store is GPG-encrypted, so it stays encrypted at rest on the NAS.
+
 ## Undo
 Before a real run touches anything, `install.sh` copies every config it may replace
 (plus `~/.gitconfig` and `~/.zshenv`) into one dated folder
