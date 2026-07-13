@@ -12,6 +12,7 @@
 #    --no-nvim      don't install Neovim/LazyVim or touch ~/.config/nvim
 #    --no-fabric    don't install fabric (the AI-patterns CLI)
 #    --no-alacritty don't install the Alacritty terminal or link its config
+#    --no-kitty     don't link the kitty terminal config
 #    --no-font      don't download the Nerd Font
 #    --no-chsh      don't change the default login shell
 #    -y|--yes       non-interactive
@@ -23,20 +24,21 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
 BACKUP_DIR="$HOME/backup/zsh/$STAMP"   # consolidated snapshot of configs this run replaces (visible path)
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; NO_KITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
 
 for a in "$@"; do
   case "$a" in
     --dry-run)      DRY=1;;
     --doctor)       DOCTOR=1;;
     --no-font)      NO_FONT=1;;
-    --server)       NO_FONT=1; NO_ALACRITTY=1;;
+    --server)       NO_FONT=1; NO_ALACRITTY=1; NO_KITTY=1;;
     --offline)      OFFLINE=1; NO_FONT=1;;
     --xdg)          XDG=1;;
     --no-chsh)      NO_CHSH=1;;
     --no-nvim)      NO_NVIM=1;;
     --no-fabric)    NO_FABRIC=1;;
     --no-alacritty) NO_ALACRITTY=1;;
+    --no-kitty)     NO_KITTY=1;;
     --minimal)      MINIMAL=1; NO_FONT=1;;
     -y|--yes)       : ;;
     -h|--help)      grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
@@ -242,6 +244,7 @@ snapshot() {
     "${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
     "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/kitty/kitty.conf"
     "${XDG_CONFIG_HOME:-$HOME/.config}/lazygit/config.yml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
     "$HOME/.local/bin/tmux-sessionizer"
@@ -290,9 +293,12 @@ doctor() {
   else dn "zinit not cloned yet (installs on first zsh launch)"; fi
 
   dh "CLI tools"
-  for t in fzf zoxide eza bat batcat fd fdfind rg delta lazygit jq yq direnv carapace tmux pass fabric; do
+  for t in fzf zoxide eza rg delta lazygit jq yq direnv carapace tmux pass fabric; do
     have "$t" && dg "$t" || dn "$t missing"
   done
+  # Debian/Ubuntu ship bat as `batcat` and fd as `fdfind`; count either as present.
+  have bat && dg "bat" || { have batcat && dg "bat (batcat)" || dn "bat missing"; }
+  have fd  && dg "fd"  || { have fdfind && dg "fd (fdfind)"  || dn "fd missing"; }
 
   dh "Editor & terminal"
   if have nvim; then
@@ -302,6 +308,7 @@ doctor() {
     rm -rf "$nst"
   else dn "nvim missing"; fi
   have alacritty && dg "alacritty" || dn "alacritty missing (expected on servers)"
+  have kitty && dg "kitty" || dn "kitty not installed (config still linked if you use it)"
 
   dh "Symlinks → repo"
   if [ -L "$cfg/zsh/.zshrc" ]; then dlink "$cfg/zsh/.zshrc" "zsh/.zshrc"   # --xdg layout
@@ -583,6 +590,9 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 # alacritty config (client-side terminal; skipped by --minimal/--server/--no-alacritty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
   link "$REPO_DIR/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
+# kitty config (linked whether or not kitty is installed; skipped by --minimal/--server/--no-kitty)
+[ "$MINIMAL" -eq 0 ] && [ "$NO_KITTY" -eq 0 ] && \
+  link "$REPO_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 
 # Neovim / LazyVim config (whole dir; lazy-lock.json lands in the repo for version pinning)
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then

@@ -20,6 +20,7 @@ for p in \
   "$HOME/.local/bin/tmux-sessionizer" \
   "$HOME/.local/bin/nas-sync" \
   "$cfg/alacritty/alacritty.toml" \
+  "$cfg/kitty/kitty.conf" \
   "$cfg/lazygit/config.yml"; do
   # -L catches a leftover (even dangling) symlink; -e catches any leftover file.
   if [ -L "$p" ] || [ -e "$p" ]; then bad "still present after uninstall: $p"

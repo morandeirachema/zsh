@@ -87,6 +87,11 @@ Ideas taken from three Mischa van den Burg videos (see
   touches nothing (verified: zero filesystem writes in an isolated `$HOME`).
 - **`--doctor`** — health check for tools, symlinks (→ repo), Nerd Font, and the
   git-delta include; side-effect-free (routes nvim's state to a throwaway dir).
+  Later fixed a `grep -q`/SIGPIPE-under-`pipefail` false-negative in the font check
+  (also in the install-decision) — use `grep -c`; and made bat/fd report once
+  (Debian names them batcat/fdfind).
+- **kitty config** — `kitty/kitty.conf` (Catppuccin Mocha + JetBrainsMono Nerd Font,
+  matching Alacritty), linked whether or not kitty is installed; `--no-kitty` to skip.
 
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).

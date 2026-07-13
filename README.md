@@ -131,6 +131,7 @@ already zsh, so it isn't changed; the font is installed via `brew --cask`.
 | `--no-nvim` | don't install Neovim/LazyVim or touch `~/.config/nvim` |
 | `--no-fabric` | don't install [fabric](https://github.com/danielmiessler/fabric) (the AI-patterns CLI) |
 | `--no-alacritty` | don't install [Alacritty](https://alacritty.org) or link its config |
+| `--no-kitty` | don't link the [kitty](https://sw.kovidgoyal.net/kitty/) terminal config |
 | `--no-font` | skip the Nerd Font download |
 | `--no-chsh` | don't change your default login shell |
 | `-y`, `--yes` | non-interactive |
@@ -139,7 +140,7 @@ already zsh, so it isn't changed; the font is installed via `brew --cask`.
 
 > [!IMPORTANT]
 > **Fonts & icons.** The prompt uses special glyphs (folder, git, distro icons) that
-> need a **Nerd Font**. If you use the bundled Alacritty config, it's already set. On
+> need a **Nerd Font**. The bundled Alacritty **and kitty** configs already set it. On
 > any other terminal, set its font to **JetBrainsMono Nerd Font** (e.g. kitty:
 > `font_family JetBrainsMono Nerd Font`). Seeing boxes like `□`? That's a missing
 > font, not a broken install.
@@ -507,17 +508,20 @@ Two optional, security-minded extras:
 
 ---
 
-### 🖥️ Alacritty (the terminal app)
+### 🖥️ Terminal (Alacritty + kitty)
 
-[`alacritty/alacritty.toml`](alacritty/alacritty.toml) is a GPU-accelerated terminal
-pre-themed in **Catppuccin Mocha** with **JetBrainsMono Nerd Font** baked in — so the
-whole stack (terminal → prompt → tmux → editor) is one coherent look and every glyph
-renders with zero setup. It's intentionally minimal, because **tmux** already provides
-tabs, splits, and sessions.
+Two matching terminal presets — both **Catppuccin Mocha** with **JetBrainsMono Nerd
+Font** baked in, so the whole stack (terminal → prompt → tmux → editor) is one coherent
+look and every glyph renders with zero setup:
 
-Installed and linked on desktops; skipped on servers (`--server`) and with
-`--no-alacritty`. Prefer kitty, WezTerm, or your OS terminal? Keep it — just point its
-font at *JetBrainsMono Nerd Font*. Nothing else depends on Alacritty.
+- [`alacritty/alacritty.toml`](alacritty/alacritty.toml) — GPU-accelerated; **installed
+  and linked** on desktops (`--no-alacritty` to skip).
+- [`kitty/kitty.conf`](kitty/kitty.conf) — **linked** whether or not kitty is installed
+  (`--no-kitty` to skip); install kitty yourself if you prefer it.
+
+Both are intentionally minimal — **tmux** provides tabs, splits, and sessions. Skipped
+on servers (`--server`). Using WezTerm or your OS terminal instead? Just point its font
+at *JetBrainsMono Nerd Font*.
 
 ---
 
@@ -769,6 +773,7 @@ Built to run on servers and privileged boxes — full details in
 ├── lazygit/config.yml      # lazygit (uses delta)    ->  ~/.config/lazygit/config.yml
 ├── tmux/tmux.conf          # tmux config             ->  ~/.config/tmux/tmux.conf
 ├── alacritty/alacritty.toml # terminal preset        ->  ~/.config/alacritty/alacritty.toml
+├── kitty/kitty.conf        # terminal preset         ->  ~/.config/kitty/kitty.conf
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
 │   ├── tmux-sessionizer.sh # fzf project switcher    ->  ~/.local/bin/tmux-sessionizer
