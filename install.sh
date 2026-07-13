@@ -315,9 +315,13 @@ doctor() {
 
   dh "Font & git"
   if have fc-list; then
-    fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font" \
-      && dg "JetBrainsMono Nerd Font installed" \
-      || dn "JetBrainsMono Nerd Font not found (set your terminal font, or re-run without --no-font)"
+    # grep -c (reads all input) — NOT grep -q, which exits early and can SIGPIPE
+    # fc-list on a big font list under `pipefail`, giving a false "not found".
+    if [ "$(fc-list 2>/dev/null | grep -ci 'JetBrainsMono Nerd Font')" -gt 0 ]; then
+      dg "JetBrainsMono Nerd Font installed"
+    else
+      dn "JetBrainsMono Nerd Font not found (set your terminal font, or re-run without --no-font)"
+    fi
   else dn "fc-list unavailable — can't verify the Nerd Font (normal on macOS)"; fi
   if git config --global --get-all include.path 2>/dev/null | grep -qxF "$REPO_DIR/git/delta.gitconfig"; then
     dg "git-delta include active"
@@ -511,7 +515,7 @@ if [ "$NO_FONT" -eq 0 ]; then
     brew install --cask font-jetbrains-mono-nerd-font \
       && ok "Font installed — set your terminal font to 'JetBrainsMono Nerd Font'." \
       || warn "font cask failed; rerun with --no-font to skip"
-  elif ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
+  elif [ "$(fc-list 2>/dev/null | grep -ci 'JetBrainsMono Nerd Font')" -eq 0 ]; then
     info "Installing JetBrainsMono Nerd Font…"
     FONT_DIR="$HOME/.local/share/fonts/JetBrainsMonoNerd"
     mkdir -p "$FONT_DIR"; tmp="$(mktemp -d)"
