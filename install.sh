@@ -317,6 +317,7 @@ doctor() {
   dlink "$cfg/tmux/tmux.conf"               "tmux/tmux.conf"
   dlink "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
   dlink "$cfg/alacritty/alacritty.toml"     "alacritty/alacritty.toml"
+  dlink "$cfg/kitty/kitty.conf"             "kitty/kitty.conf"
   dlink "$cfg/lazygit/config.yml"           "lazygit/config.yml"
   dlink "$cfg/nvim"                         "nvim"
 
