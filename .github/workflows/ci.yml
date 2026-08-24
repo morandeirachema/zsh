@@ -14,7 +14,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install zsh + shellcheck
         run: sudo apt-get update && sudo apt-get install -y zsh shellcheck
       - name: shellcheck (shell scripts)
@@ -75,7 +75,7 @@ jobs:
             prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
             args: --offline --minimal --no-chsh -y
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Smoke test on ${{ matrix.name }}
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
@@ -103,7 +103,7 @@ jobs:
           - name: arch
             image: archlinux:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # The whole point of bootstrap.sh is a box with NO git: you can't clone the
       # repo that holds install.sh. These base images ship without git, so there is
       # deliberately no prep step here — bootstrap has to install git itself, clone,
@@ -142,7 +142,7 @@ jobs:
             image: archlinux:latest
             prep: pacman -Sy --noconfirm sudo git curl zsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Non-minimal install (minus the slow nvim + font) so the extras path is
       # actually exercised: pass, fabric (SHA256-verified GitHub release),
       # tmux-sessionizer symlink, and the fzf preview opts. Asserted by
