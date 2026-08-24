@@ -41,7 +41,7 @@ for a in "$@"; do
     --no-kitty)     NO_KITTY=1;;
     --minimal)      MINIMAL=1; NO_FONT=1;;
     -y|--yes)       : ;;
-    -h|--help)      grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    -h|--help)      grep '^#' "$0" | sed '1d;s/^# \{0,1\}//'; exit 0;;   # 1d drops the shebang
     *) echo "unknown option: $a"; exit 1;;
   esac
 done
