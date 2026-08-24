@@ -18,6 +18,12 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
 ## Supply chain
 - Tools install from your **distro/Homebrew package manager first**; the piped
   `curl | sh` installers (starship, zoxide) are a labelled fallback only.
+- **`bootstrap.sh` is download-then-run, never `curl | sh`.** It exists only to
+  install `git` on a box that has none (you cannot clone this repo without it), and
+  it does that through your package manager like everything else. The README tells
+  you to fetch it, read it, then run it — so the same posture applies to this repo's
+  own front door. It refuses to overwrite a non-git directory, and `--dry-run`
+  prints every step without touching the disk.
 - **Release binaries are checksum-verified**: lazygit, neovim, carapace and fabric
   downloads are SHA256-checked against their published checksums and refused on
   mismatch. Version lookups hit the GitHub API and use `GITHUB_TOKEN`/`GH_TOKEN`

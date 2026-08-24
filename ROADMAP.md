@@ -93,6 +93,14 @@ Ideas taken from three Mischa van den Burg videos (see
 - **kitty config** — `kitty/kitty.conf` (Catppuccin Mocha + JetBrainsMono Nerd Font,
   matching Alacritty), linked whether or not kitty is installed; `--no-kitty` to skip.
 
+## ✅ Done (bootstrap pass)
+- **`bootstrap.sh`** — closes the chicken-and-egg where `install.sh` installs `git`
+  but you need `git` to clone the repo that holds `install.sh`. POSIX `sh` (runs
+  before bash is guaranteed), installs git/curl/bash via the detected package
+  manager, clones, then hands off. Download-then-run, not `curl | sh`; refuses to
+  clobber a non-git directory; `--dry-run`, `--no-install`, `--dir`, `--repo`.
+  CI proves it on **git-less** ubuntu/fedora/arch images.
+
 ## Future ideas
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - Pin release-binary versions (fabric/lazygit/neovim/carapace fetch `latest`) for

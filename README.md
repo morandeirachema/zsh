@@ -89,9 +89,8 @@ shortcuts and leaves your originals untouched.
 
 ## 🚀 Quick start
 
-> [!NOTE]
-> Only `git` and `curl` need to exist up front — the installer adds everything else,
-> for your distro, automatically.
+**If you already have `git`** — the installer adds everything else, for your distro,
+automatically:
 
 ```bash
 git clone https://github.com/morandeirachema/zsh.git ~/code/console
@@ -99,6 +98,21 @@ cd ~/code/console
 ./install.sh          # want to look before you leap? ./install.sh --dry-run
 exec zsh              # start your new shell (or just open a new terminal)
 ```
+
+**On a bare box with no `git` yet** — a fresh VM or container can't run the clone
+above, and `install.sh` can't help because it lives *inside* the repo. `bootstrap.sh`
+breaks that circle: it installs `git` with your package manager, clones, and hands off.
+Fetch it, read it, run it:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/morandeirachema/zsh/main/bootstrap.sh
+less bootstrap.sh     # ~135 lines — read before you run, as with any installer
+sh bootstrap.sh       # any install.sh flag works here too: sh bootstrap.sh --server
+```
+
+<sub>`--dir PATH` clones somewhere other than `~/code/console` · `--repo URL` uses a fork ·
+`--no-install` clones without running the installer · `--dry-run` prints the plan and
+changes nothing.</sub>
 
 That's it. The installer detects your package manager, installs any missing tools,
 **backs up anything it will replace** (see [Safety net](#-safety-net-preview-inspect-back-up-restore)),

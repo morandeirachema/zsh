@@ -18,9 +18,15 @@ jobs:
       - name: Install zsh + shellcheck
         run: sudo apt-get update && sudo apt-get install -y zsh shellcheck
       - name: shellcheck (shell scripts)
-        run: shellcheck --severity=warning --shell=bash install.sh uninstall.sh scripts/*.sh
-      - name: bash -n (install.sh)
-        run: bash -n install.sh
+        run: |
+          shellcheck --severity=warning --shell=bash install.sh uninstall.sh scripts/*.sh
+          # bootstrap.sh is POSIX sh on purpose — it runs before bash is guaranteed
+          shellcheck --severity=warning --shell=sh bootstrap.sh
+      - name: bash -n (install.sh) / sh -n (bootstrap.sh)
+        run: |
+          bash -n install.sh
+          sh   -n bootstrap.sh
+          dash -n bootstrap.sh   # stricter POSIX parse than bash-as-sh
       - name: zsh -n (zsh configs)
         run: |
           zsh -n zsh/.zshrc
@@ -79,6 +85,42 @@ jobs:
             test -L "$HOME/.config/starship.toml"     && echo "✓ starship.toml symlinked"
             zsh -ic "exit 0"                          && echo "✓ interactive zsh loads"
             echo "smoke OK on ${{ matrix.name }}"
+          '
+
+  bootstrap:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu
+            image: ubuntu:24.04
+          - name: fedora
+            image: fedora:latest
+          - name: arch
+            image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      # The whole point of bootstrap.sh is a box with NO git: you can't clone the
+      # repo that holds install.sh. These base images ship without git, so there is
+      # deliberately no prep step here — bootstrap has to install git itself, clone,
+      # and hand off to install.sh. Ubuntu also runs this under dash, not bash.
+      - name: Bootstrap a git-less ${{ matrix.name }}
+        run: |
+          docker run --rm -v "$PWD:/repo" "${{ matrix.image }}" sh -ec '
+            # assertions use `|| { …; exit 1; }` — a bare `test … && echo` cannot
+            # fail the job under set -e, so it would assert nothing
+            if command -v git >/dev/null; then
+              echo "::error::${{ matrix.image }} now ships git — this job no longer proves anything; uninstall git here or drop the distro"
+              exit 1
+            fi
+            cp -r /repo /root/src   # root-owned copy: sidesteps git safe.directory on the mount
+            sh /root/src/bootstrap.sh --repo /root/src --dir /root/console --minimal --no-chsh -y
+            command -v git >/dev/null  || { echo "::error::bootstrap did not install git";      exit 1; }
+            test -d /root/console/.git || { echo "::error::bootstrap did not clone the repo";   exit 1; }
+            test -L "$HOME/.zshrc"     || { echo "::error::install.sh never ran (no ~/.zshrc)"; exit 1; }
+            echo "bootstrap OK on ${{ matrix.name }}"
           '
 
   extras:
